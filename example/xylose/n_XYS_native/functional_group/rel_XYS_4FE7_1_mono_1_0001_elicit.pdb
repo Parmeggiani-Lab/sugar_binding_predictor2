@@ -1,0 +1,64 @@
+HETATM    1  C1  XYS A   0      47.177  28.157 110.114  1.00  0.00           C  
+HETATM    2  C2  XYS A   0      47.073  26.872 110.908  1.00  0.00           C  
+HETATM    3  C3  XYS A   0      46.142  27.063 112.104  1.00  0.00           C  
+HETATM    4  O3  XYS A   0      46.051  25.881 112.870  1.00  0.00           O  
+HETATM    5  C4  XYS A   0      46.743  28.191 112.925  1.00  0.00           C  
+HETATM    6  C5  XYS A   0      46.673  29.455 112.077  1.00  0.00           C  
+HETATM    7  O5  XYS A   0      47.451  29.244 110.906  1.00  0.00           O  
+HETATM    8  O   XYS A   0      46.001  28.371 109.368  1.00  0.00           O  
+HETATM    9  O2  XYS A   0      46.646  25.796 110.097  1.00  0.00           O  
+HETATM   10  O4  XYS A   0      46.070  28.327 114.158  1.00  0.00           O  
+ATOM     11  CG  ASP B  65      49.076  29.475 116.500  1.00  0.00           C  
+ATOM     12  OD1 ASP B  65      49.821  28.891 117.314  1.00  0.00           O  
+ATOM     13  OD2 ASP B  65      48.038  28.952 116.033  1.00  0.00           O1-
+ATOM     14  CG  TRP B 135      51.784  27.101 112.650  1.00  0.00           C  
+ATOM     15  CD1 TRP B 135      51.985  28.434 112.846  1.00  0.00           C  
+ATOM     16  CD2 TRP B 135      51.395  26.954 111.262  1.00  0.00           C  
+ATOM     17  CE2 TRP B 135      51.389  28.234 110.703  1.00  0.00           C  
+ATOM     18  CE3 TRP B 135      51.059  25.855 110.462  1.00  0.00           C  
+ATOM     19  NE1 TRP B 135      51.750  29.124 111.683  1.00  0.00           N  
+ATOM     20  CZ2 TRP B 135      51.057  28.454 109.375  1.00  0.00           C  
+ATOM     21  CZ3 TRP B 135      50.727  26.074 109.130  1.00  0.00           C  
+ATOM     22  CH2 TRP B 135      50.727  27.341 108.602  1.00  0.00           C  
+ATOM     23  CZ  ARG B 139      48.581  23.059 111.800  1.00  0.00           C  
+ATOM     24  NH1 ARG B 139      48.417  23.541 110.567  1.00  0.00           N1+
+ATOM     25  NH2 ARG B 139      47.844  23.538 112.800  1.00  0.00           N  
+ATOM     26  CG  ASP B 219      43.816  25.833 108.488  1.00  0.00           C  
+ATOM     27  OD1 ASP B 219      43.969  25.633 109.717  1.00  0.00           O  
+ATOM     28  OD2 ASP B 219      44.716  26.224 107.708  1.00  0.00           O1-
+ATOM     29  CD  GLN B 237      43.063  23.079 113.116  1.00  0.00           C  
+ATOM     30  NE2 GLN B 237      43.649  23.552 112.022  1.00  0.00           N  
+ATOM     31  OE1 GLN B 237      43.324  23.500 114.246  1.00  0.00           O  
+TER   
+CONECT    1    2    7    8
+CONECT    2    1    3    9
+CONECT    3    2    4    5
+CONECT    4    3
+CONECT    5    3    6   10
+CONECT    6    5    7
+CONECT    7    1    6
+CONECT    8    1
+CONECT    9    2
+CONECT   10    5
+CONECT   11   12   13
+CONECT   12   11
+CONECT   13   11
+CONECT   14   15   16
+CONECT   15   14   19
+CONECT   16   14   17   18
+CONECT   17   16   19   20
+CONECT   18   16   21
+CONECT   19   15   17
+CONECT   20   17   22
+CONECT   21   18   22
+CONECT   22   20   21
+CONECT   23   24   25
+CONECT   24   23
+CONECT   25   23
+CONECT   26   27   28
+CONECT   27   26
+CONECT   28   26
+CONECT   29   30   31
+CONECT   30   29
+CONECT   31   29
+END

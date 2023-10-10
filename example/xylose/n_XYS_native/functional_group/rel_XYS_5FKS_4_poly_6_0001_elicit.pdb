@@ -1,0 +1,34 @@
+HETATM    1  C1  XYS A   0      32.659  23.866  -4.638  1.00  0.00           C  
+HETATM    2  C2  XYS A   0      33.435  22.553  -4.836  1.00  0.00           C  
+HETATM    3  C3  XYS A   0      33.725  22.439  -6.342  1.00  0.00           C  
+HETATM    4  O3  XYS A   0      34.536  21.312  -6.627  1.00  0.00           O  
+HETATM    5  C4  XYS A   0      32.346  22.438  -7.060  1.00  0.00           C  
+HETATM    6  C5  XYS A   0      31.368  23.578  -6.627  1.00  0.00           C  
+HETATM    7  O5  XYS A   0      31.343  23.783  -5.188  1.00  0.00           O  
+HETATM    8  O   XYS A   0      33.484  25.003  -5.105  1.00  0.00           O  
+HETATM    9  O2  XYS A   0      34.673  22.587  -4.140  1.00  0.00           O  
+HETATM   10  O4  XYS A   0      32.532  22.548  -8.450  1.00  0.00           O  
+ATOM     11  N   GLY B 483      30.451  22.298 -13.161  1.00  0.00           N  
+ATOM     12  CA  GLY B 483      30.317  22.585 -11.730  1.00  0.00           C  
+ATOM     13  C   GLY B 483      29.978  21.414 -10.829  1.00  0.00           C  
+ATOM     14  O   GLY B 483      30.322  21.458  -9.680  1.00  0.00           O  
+ATOM     15  CB  SER B 506      35.315  21.218 -10.526  1.00  0.00           C  
+ATOM     16  OG  SER B 506      36.033  21.157  -9.324  1.00  0.00           O  
+TER   
+CONECT    1    2    7    8
+CONECT    2    1    3    9
+CONECT    3    2    4    5
+CONECT    4    3
+CONECT    5    3    6   10
+CONECT    6    5    7
+CONECT    7    1    6
+CONECT    8    1
+CONECT    9    2
+CONECT   10    5
+CONECT   11   12
+CONECT   12   11   13
+CONECT   13   12   14
+CONECT   14   13
+CONECT   15   16
+CONECT   16   15
+END

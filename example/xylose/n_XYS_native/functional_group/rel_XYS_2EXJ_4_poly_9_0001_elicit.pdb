@@ -1,0 +1,68 @@
+HETATM    1  C1  XYS A   0     -31.918  10.661 125.495  1.00  0.00           C  
+HETATM    2  C2  XYS A   0     -32.711   9.592 126.305  1.00  0.00           C  
+HETATM    3  C3  XYS A   0     -33.275   8.441 125.417  1.00  0.00           C  
+HETATM    4  O3  XYS A   0     -34.040   7.451 126.129  1.00  0.00           O  
+HETATM    5  C4  XYS A   0     -34.201   9.020 124.398  1.00  0.00           C  
+HETATM    6  C5  XYS A   0     -33.877  10.490 124.156  1.00  0.00           C  
+HETATM    7  O5  XYS A   0     -32.422  10.705 124.155  1.00  0.00           O  
+HETATM    8  O   XYS A   0     -30.770  10.017 124.819  1.00  0.00           O  
+HETATM    9  O2  XYS A   0     -31.926   9.095 127.408  1.00  0.00           O  
+HETATM   10  O4  XYS A   0     -33.959   8.306 123.215  1.00  0.00           O  
+ATOM     11  CG  ASP B  15     -33.831   4.926 123.658  1.00  0.00           C  
+ATOM     12  OD1 ASP B  15     -32.657   5.316 123.480  1.00  0.00           O  
+ATOM     13  OD2 ASP B  15     -34.786   5.692 123.797  1.00  0.00           O1-
+ATOM     14  CG  TRP B  74     -37.742   9.637 127.218  1.00  0.00           C  
+ATOM     15  CD1 TRP B  74     -38.782  10.097 126.440  1.00  0.00           C  
+ATOM     16  CD2 TRP B  74     -36.847  10.758 127.382  1.00  0.00           C  
+ATOM     17  CE2 TRP B  74     -37.385  11.839 126.659  1.00  0.00           C  
+ATOM     18  CE3 TRP B  74     -35.635  10.937 128.060  1.00  0.00           C  
+ATOM     19  NE1 TRP B  74     -38.564  11.419 126.097  1.00  0.00           N  
+ATOM     20  CZ2 TRP B  74     -36.757  13.099 126.607  1.00  0.00           C  
+ATOM     21  CZ3 TRP B  74     -35.002  12.179 127.998  1.00  0.00           C  
+ATOM     22  CH2 TRP B  74     -35.568  13.245 127.271  1.00  0.00           C  
+ATOM     23  CD  GLU B 187     -28.796  10.331 127.440  1.00  0.00           C  
+ATOM     24  OE1 GLU B 187     -29.794  10.788 127.943  1.00  0.00           O  
+ATOM     25  OE2 GLU B 187     -28.455  10.576 126.306  1.00  0.00           O1-
+ATOM     26  CG  HIS B 249     -29.337   5.276 124.453  1.00  0.00           C  
+ATOM     27  CD2 HIS B 249     -29.470   6.556 124.034  1.00  0.00           C  
+ATOM     28  ND1 HIS B 249     -29.517   5.299 125.820  1.00  0.00           N  
+ATOM     29  CE1 HIS B 249     -29.747   6.541 126.209  1.00  0.00           C  
+ATOM     30  NE2 HIS B 249     -29.724   7.322 125.145  1.00  0.00           N  
+ATOM     31  CZ  ARG B 288     -33.339   8.649 119.890  1.00  0.00           C  
+ATOM     32  NH1 ARG B 288     -32.238   8.497 120.614  1.00  0.00           N1+
+ATOM     33  NH2 ARG B 288     -34.511   8.769 120.504  1.00  0.00           N  
+TER   
+CONECT    1    2    7    8
+CONECT    2    1    3    9
+CONECT    3    2    4    5
+CONECT    4    3
+CONECT    5    3    6   10
+CONECT    6    5    7
+CONECT    7    1    6
+CONECT    8    1
+CONECT    9    2
+CONECT   10    5
+CONECT   11   12   13
+CONECT   12   11
+CONECT   13   11
+CONECT   14   15   16
+CONECT   15   14   19
+CONECT   16   14   17   18
+CONECT   17   16   19   20
+CONECT   18   16   21
+CONECT   19   15   17
+CONECT   20   17   22
+CONECT   21   18   22
+CONECT   22   20   21
+CONECT   23   24   25
+CONECT   24   23
+CONECT   25   23
+CONECT   26   27   28
+CONECT   27   26   30
+CONECT   28   26   29
+CONECT   29   28   30
+CONECT   30   27   29
+CONECT   31   32   33
+CONECT   32   31
+CONECT   33   31
+END

@@ -1,0 +1,54 @@
+HETATM    1  C1  XYS A   0      18.945  -1.974  85.440  1.00  0.00           C  
+HETATM    2  C2  XYS A   0      18.898  -3.465  85.851  1.00  0.00           C  
+HETATM    3  C3  XYS A   0      17.826  -4.223  85.059  1.00  0.00           C  
+HETATM    4  O3  XYS A   0      17.731  -5.533  85.618  1.00  0.00           O  
+HETATM    5  C4  XYS A   0      16.474  -3.478  85.193  1.00  0.00           C  
+HETATM    6  C5  XYS A   0      16.669  -2.005  84.770  1.00  0.00           C  
+HETATM    7  O5  XYS A   0      17.642  -1.363  85.624  1.00  0.00           O  
+HETATM    8  O   XYS A   0      19.340  -1.830  84.069  1.00  0.00           O  
+HETATM    9  O2  XYS A   0      20.153  -4.093  85.603  1.00  0.00           O  
+HETATM   10  O4  XYS A   0      15.502  -4.071  84.332  1.00  0.00           O  
+ATOM     11  CE  LYS B 158      12.193  -2.393  83.880  1.00  0.00           C  
+ATOM     12  NZ  LYS B 158      12.724  -3.615  84.542  1.00  0.00           N1+
+ATOM     13  N   GLY B 398      22.958  -3.879  83.977  1.00  0.00           N  
+ATOM     14  CA  GLY B 398      22.818  -3.515  82.561  1.00  0.00           C  
+ATOM     15  C   GLY B 398      21.365  -3.660  82.181  1.00  0.00           C  
+ATOM     16  O   GLY B 398      20.607  -4.355  82.861  1.00  0.00           O  
+ATOM     17  CG  ASN B 399      18.791  -0.959  80.326  1.00  0.00           C  
+ATOM     18  ND2 ASN B 399      18.624   0.061  79.523  1.00  0.00           N  
+ATOM     19  OD1 ASN B 399      18.731  -0.857  81.557  1.00  0.00           O  
+ATOM     20  N   GLY B 421      18.056  -8.466  84.542  1.00  0.00           N  
+ATOM     21  CA  GLY B 421      16.749  -9.066  84.255  1.00  0.00           C  
+ATOM     22  C   GLY B 421      16.571  -9.590  82.833  1.00  0.00           C  
+ATOM     23  O   GLY B 421      15.775 -10.519  82.575  1.00  0.00           O  
+ATOM     24  CD  GLU B 421      14.408  -6.780  86.384  1.00  0.00           C  
+ATOM     25  OE1 GLU B 421      14.036  -6.693  87.573  1.00  0.00           O  
+ATOM     26  OE2 GLU B 421      14.000  -6.016  85.471  1.00  0.00           O1-
+TER   
+CONECT    1    2    7    8
+CONECT    2    1    3    9
+CONECT    3    2    4    5
+CONECT    4    3
+CONECT    5    3    6   10
+CONECT    6    5    7
+CONECT    7    1    6
+CONECT    8    1
+CONECT    9    2
+CONECT   10    5
+CONECT   11   12
+CONECT   12   11
+CONECT   13   14
+CONECT   14   13   15
+CONECT   15   14   16
+CONECT   16   15
+CONECT   17   18   19
+CONECT   18   17
+CONECT   19   17
+CONECT   20   21
+CONECT   21   20   22
+CONECT   22   21   23
+CONECT   23   22
+CONECT   24   25   26
+CONECT   25   24
+CONECT   26   24
+END
