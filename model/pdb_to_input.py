@@ -1,5 +1,5 @@
 
-path='../example/xylose/n_XYS_native/'
+path='../example/test_pdb/'
 
 
 

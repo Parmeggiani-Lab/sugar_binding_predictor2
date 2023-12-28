@@ -2,9 +2,29 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 import pandas as pd
 import torch,time
+from tqdm import tqdm
 import sys,os,re,random
+from argparse import ArgumentParser, Namespace
 
 from sugar_binding_predictor import sugar_binding_predictor
+
+
+from pdb_n2n_input import data_preprocessing
+
+parser = ArgumentParser()
+
+parser.add_argument('--complex_pdb', type=str, default=None, help='.pdb file ')
+parser.add_argument('--complex_list', type=str, default='example_complex_list', help='.pdb file list, each file can add a label after the file name seperated by a tab')
+parser.add_argument('--site_txt', type=str, default=None, help='Processed minimum binding site input .txt file')
+parser.add_argument('--site_list', type=str, default=None, help='Processed minimum binding site input .txt list, each file can add a label after the file name seperated by a tab')
+parser.add_argument('--with_label', type=int, default=1, help='Label 1 or 0 of input file, if unknown set None')
+parser.add_argument('--file_path', type=str, default='../example/test_pdb/', help='Directory of input file or file list ')
+parser.add_argument('--out_dir', type=str, default='../', help='Directory where the outputs will be written to')
+parser.add_argument('--model_dir', type=str, default='../model/param/', help='Path to folder with trained model and hyperparameters')
+parser.add_argument('--model', type=str, default=None, help='Model parameter for prediction, there are well-trained and general two options, in default both of them would be used ')
+parser.add_argument('--output_CH_pi_record', type=int, default=0, help='Write CH-pi interaction info for each pdb file ')
+
+args = parser.parse_args()
 
 
 def blockPrint():
@@ -38,26 +58,11 @@ def dataset_for_test_only(loc_list,label_list,list_limit=None):
         all_file_list.extend(file_list)
     #print(all_file_list)
     return all_file_list
-def load_data_from_file(file_path,ch_pi_percent=None):
+def load_data_from_file(file_path):
     info_dict={}
-
-    if ch_pi_percent!= None:
-        if random.random()<=ch_pi_percent:
-            with open(file_path, 'r') as info_file:
-                sample_info = info_file.readlines()
-                info_file.close()
-            info_dict['open_ch_pi_count']=1
-        else:
-            #print(file_path[:-15])
-            with open(file_path[:-15]+'elicit_no_CH_pi_info.txt', 'r') as info_file:
-                sample_info = info_file.readlines()
-                info_file.close()
-            info_dict['open_ch_pi_count'] = 0
-        info_dict['bad_train_file_count'] = 1
-    else:
-        with open(file_path, 'r') as info_file:
-            sample_info = info_file.readlines()
-            info_file.close()
+    with open(file_path, 'r') as info_file:
+        sample_info = info_file.readlines()
+        info_file.close()
     for line in sample_info:
         if line != '\n':
             perline = line.split('\n')[0].split('\t')
@@ -65,75 +70,109 @@ def load_data_from_file(file_path,ch_pi_percent=None):
     info_dict['clean_interacting_list'] = eval(info_dict['clean_interacting_list'])
     return info_dict
 
+def load_sample():
+    output_CH_pi_record=args.output_CH_pi_record
+    test_only_set=[]
+    file_path=args.file_path
+    if args.complex_pdb==args.complex_list==args.site_txt==args.site_list==None:
+        print('No file is loading. Please use any  of --complex_pdb, --complex_list, --site_txt, --site_list. ')
+        #exit()
+    if args.site_txt is not None:
+        test_only_set.append([file_path+args.site_txt,args.with_label])
+    if args.site_list is not None:
+        with open(file_path+args.site_list,'r') as site_list_file:
+            context=site_list_file.readlines()
+            try:
+                site_info=[[file_path+i.split('\t')[0],int(i.split('\t')[1].split('\n')[0])]for i in context]
+            except IndexError:
+                site_info = [[file_path + i.split('\n')[0].split(' ')[0], None] for i in context]
+                args.with_label=None
+            test_only_set.extend(site_info)
+    if args.complex_pdb is not None:
+        blockPrint()
+        data_preprocessing(file_path,args.complex_pdb,output_CH_pi_record=output_CH_pi_record)
+        enablePrint()
+        test_only_set.append([file_path + args.complex_pdb[:-4] + '_elicit_info.txt', args.with_label])
+    if args.complex_list is not None:
+        with open(file_path+args.complex_list,'r') as complex_list_file:
+            context=complex_list_file.readlines()
+            try:
+                complex_info=[[file_path+i.split('\t')[0],int(i.split('\t')[1].split('\n')[0])]for i in context]
+            except IndexError:
+                complex_info = [[file_path + i.split('\n')[0].split(' ')[0], None] for i in context]
+                args.with_label=None
+            for cp in complex_info:
+                complex_pdb_file=cp[0]
+                blockPrint()
+                data_preprocessing(file_path,complex_pdb_file[len(file_path):],output_CH_pi_record=output_CH_pi_record)
+                enablePrint()
+            test_only_set.extend([[i[0][:-4] + '_elicit_info.txt',i[1]] for i in complex_info])
+
+    return test_only_set
+
 
 def predict_binding(out_path='../'):
-    ch_pi_option=0
-    select_param_loc = '../model/param/'
-    param_file_list = []
-    for f in os.listdir(select_param_loc):
-        if re.search('(.*).pt', f):
-            param_file_list.append(f)
-    print(param_file_list)
+    select_param_loc =args.model_dir
+    param_file_list=[]
+    if args.model is None:
+        param_file_list = ['well-trained.pt','general.pt']
+    elif args.model=='well-trained':
+        param_file_list = ['well-trained.pt']
+    elif args.model=='general':
+        param_file_list = ['general.pt']
+    print('Model to be run :',param_file_list)
     param_index = 0
 
-    test_reult = pd.DataFrame(
-        columns=['params_name', 'test_set', 'test_loss', 'test_accuracy', 'test_size', '11', '10', '00', '01'])
+    if args.with_label==None:
+        test_result = pd.DataFrame(
+            columns=['params_name', 'test_size', '1', '0',])
+    else:
+        test_result = pd.DataFrame(
+            columns=['params_name', 'test_accuracy', 'test_size', '11', '10', '00', '01'])
 
-    for select_param in param_file_list[0:]:
+    for select_param in param_file_list:
         param_index += 1
         model.load_state_dict(torch.load(select_param_loc + select_param))
         print('loading ' + select_param + ' ' + str(param_index) + '/' + str(len(param_file_list)) + '... ')
 
         print('Test model ...')
-        if multi_test_set == []:
-            multi_test_set.append(test_only_set)
 
-        for test_set_id, each_test_set in enumerate(multi_test_set):
-            print(multi_test_name[test_set_id])
-            test_only_set = each_test_set
-            test_loss = 0
-            test_error = 0
-            accuarcy_list = []
-            accuarcy_file_list = []
-            pred_result_list = []
-            not_find_file = 0
-            with torch.no_grad():
-                for index, i in enumerate(test_only_set):
-                    # print(i)
-                    label = i[1]
-                    i = i[0]
 
-                    # try:
-                    if label == 1:
-                        info_dict = load_data_from_file(i)
-                    else:
-                        # try:
-                        info_dict = load_data_from_file(i, ch_pi_percent=ch_pi_option)
-                        # except FileNotFoundError:
-                        #    info_dict = load_data_from_file(i)
 
-                    blockPrint()
-                    pred = model(info_dict)
-                    enablePrint()
-                    # except FileNotFoundError:
-                    #    pred=torch.tensor([0],dtype=torch.float32)
-                    #    not_find_file+=1
-                    loss = loss_func(pred, torch.tensor([[int(label)]], device=device))
+        accuarcy_list = []
+        accuarcy_file_list = []
+        pred_result_list = []
+        with torch.no_grad():
+            for  i in tqdm(test_only_set):
 
-                    if not (torch.isinf(loss) or torch.isnan(loss)):
-                        test_loss += loss.detach().cpu().item()
-                        # print(str(param_index)+'/'+str(len(param_file_list))+"<<<<<<<" +str(index)+' /'+str(len(test_only_set))+': y = '+str(label)+', pred =', round(float(pred)), pred)
-                        accuarcy_list.append(str(label) + str(round(float(pred))))
-                        accuarcy_file_list.append(i)
-                        pred_result_list.append(float(pred))
-                    else:
-                        print('\ttest:', i, loss)
-                        test_error += 1
+                label = i[1]
+                i = i[0]
 
-                test_loss = (test_loss / (len(test_only_set) + 1 - test_error))
-            print(f"Test Loss: {test_loss:.6f}")
+                info_dict = load_data_from_file(i)
 
-            accuarcy_dict = {ii: accuarcy_list.count(ii) for ii in accuarcy_list}
+                blockPrint()
+                pred = model(info_dict)
+                enablePrint()
+
+                accuarcy_list.append(str(label) + str(round(float(pred))))
+                accuarcy_file_list.append(i)
+                pred_result_list.append(float(pred))
+
+
+
+        accuarcy_dict = {ii: accuarcy_list.count(ii) for ii in accuarcy_list}
+        if  args.with_label==None:
+            for term in ['None1', 'None0']:
+                try:
+                    accuarcy_dict[term]
+                except KeyError:
+                    accuarcy_dict[term] = 0
+            new_row = {'params_name': select_param[:-3],
+                       'test_size': sum(accuarcy_dict.values()),
+                       '1': accuarcy_dict['None1'], '0': accuarcy_dict['None0'],}
+            print(accuarcy_dict, '')
+            test_result = test_result.append(new_row, ignore_index=1)
+        else:
             for term in ['11', '10', '01', '00']:
                 try:
                     accuarcy_dict[term]
@@ -144,23 +183,20 @@ def predict_binding(out_path='../'):
                   accuarcy_dict, '')
 
             new_row = {'params_name': select_param[:-3],
-                       'test_set': multi_test_name[test_set_id],
-                       'test_loss': test_loss,
                        'test_accuracy': accuracy,
                        'test_size': sum(accuarcy_dict.values()),
                        '11': accuarcy_dict['11'], '10': accuarcy_dict['10'], '00': accuarcy_dict['00'],
                        '01': accuarcy_dict['01']}
-            test_reult = test_reult.append(new_row, ignore_index=1)
-            with open(out_path + select_param[:-3] + f'_test_{test_loss:.2f}_record.txt', "a") as f:
-                f.write(select_param[:-3] + '\t' + str(accuarcy_dict) + '\t' + f'{test_loss:.2f}' + '\t' + str(
-                    accuracy) + "\n")
-                for r1, r2, r3 in zip(accuarcy_list, accuarcy_file_list, pred_result_list):
-                    f.write(
-                        str(r1) + '\t' + str(r3) + "\t" + str(r2).split('/')[-1].split('_elicit_info.txt')[0] + "\n")
+            test_result = test_result.append(new_row, ignore_index=1)
+        with open(out_path + select_param[:-3] + f'_test_{sum(accuarcy_dict.values())}_record.txt', "a") as f:
+            for r1, r2, r3 in zip(accuarcy_list, accuarcy_file_list, pred_result_list):
+                if 'None' in r1:
+                    r1=r1[-1]
+                f.write(str(r1) + '\t' + str(r3) + "\t" + str(r2).split('/')[-1].split('_elicit_info.txt')[0] + "\n")
 
     pd.set_option('display.max_rows', 500)
-    print(test_reult)
-    test_reult.to_excel(out_path + f'/test_result_{test_loss:.2f}.xlsx')
+    print(test_result)
+    test_result.to_excel(out_path + f'/test_result_{sum(accuarcy_dict.values()):.0f}.xlsx')
 
 
 
@@ -173,12 +209,7 @@ if __name__ == '__main__':
     model = sugar_binding_predictor(device=device, deg=deg, fragment_cluster=1, sugar_cluster=None)
     loss_func = torch.nn.L1Loss()
 
-    #### load test set and name
-    multi_test_set = []
-    multi_test_name = []
-    multi_test_set.append(dataset_for_test_only(['../example/xylose/n_XYS_native/input/'], [1]))
-    multi_test_name.append('XYS_native')
 
-    ### run predictor
-    predict_binding(out_path='../')
+    test_only_set=load_sample()
+    predict_binding(out_path=args.out_dir)
 

@@ -4,6 +4,14 @@
 #
 ##################################
 import ast
+import sys,os
+sys.path.remove('/home/tm21372/Rosetta/PyRosetta/setup')
+def blockPrint():
+    sys.stdout = open(os.devnull, 'w')
+def enablePrint():
+    sys.stdout = sys.__stdout__
+blockPrint()
+
 import pyrosetta; pyrosetta.init()
 import os
 from pyrosetta import *
@@ -259,29 +267,30 @@ def pose_CH_pi_score(CH_pi_aromatic_list):
     print('CH_pi_score :',CH_pi_score)
     return CH_pi_score,CH_pi_record_list
 
-def measure_CH_pi(loc):
-    pdb_files = [file for file in os.listdir(loc) if file[-4:] == '.pdb']
-    for each_file in pdb_files:
-        try:
-            pose_ori = pose_from_pdb(loc + each_file)
-        except RuntimeError:
-            continue
-        pose = Pose()
-        pose.assign(pose_ori)
+def measure_CH_pi(loc,each_file,out_record=1):
+    blockPrint()
+    pose_ori = pose_from_pdb(loc+each_file)
+    pose = Pose()
+    pose.assign(pose_ori)
 
+    CH_pi_aromatic_list=find_CH_pi_aromatic(pose)
+    result=pose_CH_pi_score(CH_pi_aromatic_list)
+    CH_pi_score = result[0]
+    CH_pi_record= result[1]
 
-
-        CH_pi_aromatic_list=find_CH_pi_aromatic(pose)
-        result=pose_CH_pi_score(CH_pi_aromatic_list)
-        CH_pi_score = result[0]
-        CH_pi_record= result[1]
-
+    if out_record==1:
         f = open(loc + 'CH_Pi_score.txt', 'a')
         f.write(str(CH_pi_score)+'\t'+str(CH_pi_record)+'\t'+each_file.split('/')[-1]+'\t'+each_file+'\n')
         f.close()
+    return CH_pi_record
+
+def main():
+    loc='../example/test_pdb/'
+    pdb_files = [file for file in os.listdir(loc) if file[-4:] == '.pdb']
+    for pdb in pdb_files:
+        measure_CH_pi(loc,pdb)
 
 
-
-measure_CH_pi('../example/xylose/n_XYS_native/')
-measure_CH_pi('../example/xylose/n_XYS_S1/')
-measure_CH_pi('../example/xylose/n_XYS_S2/')
+if __name__ == "__main__":
+   # stuff only to run when not called via 'import' here
+   main()
