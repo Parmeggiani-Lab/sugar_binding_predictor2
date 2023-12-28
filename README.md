@@ -34,7 +34,7 @@ conda install -c conda-forge libnetcdf==4.7.3
 Register PyRosetta:  https://els2.comotion.uw.edu/product/pyrosetta  
 download PyRosetta file (with python3.8 version)   
 tar -vjxf PyRosetta-<version>.tar.bz2  
-cd setup && python setup.py install  
+cd setup ; python setup.py install  
 import pyrosetta; pyrosetta.init() 
 ```
 
@@ -42,7 +42,7 @@ import pyrosetta; pyrosetta.init()
 
 Simply run by: 
 ```sh
-python _run_predict.py_
+python run_predict.py
 ```
 Running option: 
 
