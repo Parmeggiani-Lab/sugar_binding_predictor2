@@ -11,25 +11,28 @@ This method  takes the .pdb structure file as input and outputs 1 or 0 to indica
 
 Recommand to use virtual environment for building.
 
-classifier model:
-_conda create -n pred_test python=3.8  pip
-conda activate pred_test
-pip install -r ./requirements_m.txt 
-pip install torch torch-sparse torch-scatter torch-cluster -f https://data.pyg.org/whl/torch-1.13.0+cu117.html
-pip install dive-into-graphs_
+classifier model:  
 
-data preprocessing (PyMOL and PyRosetta depended):
-_conda install -c conda-forge -c schrodinger pymol-bundle
-conda install -c conda-forge libnetcdf==4.7.3
-Register PyRosetta:  https://els2.comotion.uw.edu/product/pyrosetta
-download PyRosetta file (with python3.8 version) 
-tar -vjxf PyRosetta-<version>.tar.bz2
-cd setup && python setup.py install
-import pyrosetta; pyrosetta.init()_
+_conda create -n pred_test python=3.8  pip  
+conda activate pred_test  
+pip install -r ./requirements_m.txt   
+pip install torch torch-sparse torch-scatter torch-cluster -f https://data.pyg.org/whl/torch-1.13.0+cu117.html  
+pip install dive-into-graphs_  
+
+data preprocessing (PyMOL and PyRosetta depended):  
+
+_conda install -c conda-forge -c schrodinger pymol-bundle  
+conda install -c conda-forge libnetcdf==4.7.3  
+Register PyRosetta:  https://els2.comotion.uw.edu/product/pyrosetta  
+download PyRosetta file (with python3.8 version)   
+tar -vjxf PyRosetta-<version>.tar.bz2  
+cd setup && python setup.py install  
+import pyrosetta; pyrosetta.init()_  
 
 
 **running**
 
 simply run by python _run_predict.py_
+running option:
 
 
