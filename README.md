@@ -57,3 +57,8 @@ Running option:
 `--model` : Model parameter for prediction, there are `well-trained` and `general` two options, in default both of them would be used.  
 
 
+ <h2 align="left">Contact</h2>
+
+ Yijie Luo [Jacky](https://github.com/Jacky233emm) -- yijie.luo@bristol.ac.uk
+
+ 
