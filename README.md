@@ -44,6 +44,16 @@ Simply run by:
 ```sh
 python _run_predict.py_
 ```
-Running option:
+Running option: 
+
+`--complex_pdb` : Load complex .pdb file.
+
+`--file_path` : File path of input file. 
+
+`--with_label` : Label `1` or `0` of input complex, if unknown set `None`. 
+
+`--complex_list` : Load list of complex .pdb file, label can be added after the file name seperated by a tab. 
+
+`--model` : Model parameter for prediction, there are `well-trained` and `general` two options, in default both of them would be used.  
 
 
