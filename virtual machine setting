@@ -1,0 +1,19 @@
+
+su root
+adduser jacky
+usermod -aG sudo jacky
+su - jacky
+sudo find
+
+sudo apt update
+sudo apt install python3-pip
+
+install conda
+
+
+
+sudo apt install git
+git clone https://github.com/Parmeggiani-Lab/sugar_binding_predictor2.git
+
+
+conda create -n pred_test python=3.8  pip
