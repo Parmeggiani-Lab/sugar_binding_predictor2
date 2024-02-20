@@ -17,3 +17,10 @@ git clone https://github.com/Parmeggiani-Lab/sugar_binding_predictor2.git
 
 
 conda create -n pred_test python=3.8  pip
+
+
+/model/measure_CH_pi.py：
+	delete sys.path.remove('/home/tm21372/Rosetta/PyRosetta/setup') 
+/model/run_predict.py:
+	replace test_result = test_result.append(new_row, ignore_index=1)
+  to test_result= pd.concat([test_result, pd.DataFrame([new_row])], ignore_index=True)
