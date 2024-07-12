@@ -13,8 +13,8 @@ from pdb_n2n_input import data_preprocessing
 
 parser = ArgumentParser()
 
-parser.add_argument('--complex_pdb', type=str, default=None, help='.pdb file ')
-parser.add_argument('--complex_list', type=str, default='example_complex_list', help='.pdb file list, each file can add a label after the file name seperated by a tab')
+parser.add_argument('--complex_pdb', type=str, default=None, help='.pdb file ')#'example_complex_list'
+parser.add_argument('--complex_list', type=str, default=None, help='.pdb file list, each file can add a label after the file name seperated by a tab')
 parser.add_argument('--site_txt', type=str, default=None, help='Processed minimum binding site input .txt file')
 parser.add_argument('--site_list', type=str, default=None, help='Processed minimum binding site input .txt list, each file can add a label after the file name seperated by a tab')
 parser.add_argument('--with_label', type=int, default=1, help='Label 1 or 0 of input file, if unknown set None')
@@ -22,7 +22,7 @@ parser.add_argument('--file_path', type=str, default='../example/test_pdb/', hel
 parser.add_argument('--out_dir', type=str, default='../', help='Directory where the outputs will be written to')
 parser.add_argument('--model_dir', type=str, default='../model/param/', help='Path to folder with trained model and hyperparameters')
 parser.add_argument('--model', type=str, default=None, help='Model parameter for prediction, there are well-trained and general two options, in default both of them would be used ')
-parser.add_argument('--output_CH_pi_record', type=int, default=0, help='Write CH-pi interaction info for each pdb file ')
+parser.add_argument('--output_CH_pi_record', type=int, default=1, help='Write CH-pi interaction info for each pdb file ')
 
 args = parser.parse_args()
 
@@ -76,6 +76,8 @@ def load_sample():
     file_path=args.file_path
     if args.complex_pdb==args.complex_list==args.site_txt==args.site_list==None:
         print('No file is loading. Please use any  of --complex_pdb, --complex_list, --site_txt, --site_list. ')
+        print('Running example ... ')
+        args.complex_list='example_complex_list'
         #exit()
     if args.site_txt is not None:
         test_only_set.append([file_path+args.site_txt,args.with_label])
@@ -94,6 +96,7 @@ def load_sample():
         enablePrint()
         test_only_set.append([file_path + args.complex_pdb[:-4] + '_elicit_info.txt', args.with_label])
     if args.complex_list is not None:
+        print('\t Processing .pdb file...')
         with open(file_path+args.complex_list,'r') as complex_list_file:
             context=complex_list_file.readlines()
             try:
@@ -101,13 +104,12 @@ def load_sample():
             except IndexError:
                 complex_info = [[file_path + i.split('\n')[0].split(' ')[0], None] for i in context]
                 args.with_label=None
-            for cp in complex_info:
+            for cp in tqdm(complex_info):
                 complex_pdb_file=cp[0]
                 blockPrint()
                 data_preprocessing(file_path,complex_pdb_file[len(file_path):],output_CH_pi_record=output_CH_pi_record)
                 enablePrint()
             test_only_set.extend([[i[0][:-4] + '_elicit_info.txt',i[1]] for i in complex_info])
-
     return test_only_set
 
 
@@ -115,12 +117,12 @@ def predict_binding(out_path='../'):
     select_param_loc =args.model_dir
     param_file_list=[]
     if args.model is None:
-        param_file_list = ['well-trained.pt','general.pt']
+        param_file_list = ['ndv2_general.pt','ndv2_well.pt',]
     elif args.model=='well-trained':
-        param_file_list = ['well-trained.pt']
+        param_file_list = ['ndv2_well.pt']
     elif args.model=='general':
-        param_file_list = ['general.pt']
-    print('Model to be run :',param_file_list)
+        param_file_list = ['ndv2_general.pt']
+    print('\nModel to be run :',param_file_list)
     param_index = 0
 
     if args.with_label==None:
@@ -133,9 +135,8 @@ def predict_binding(out_path='../'):
     for select_param in param_file_list:
         param_index += 1
         model.load_state_dict(torch.load(select_param_loc + select_param))
-        print('loading ' + select_param + ' ' + str(param_index) + '/' + str(len(param_file_list)) + '... ')
+        print('Running model ' + select_param + ' ' + str(param_index) + '/' + str(len(param_file_list)) + '... ')
 
-        print('Test model ...')
 
 
 
@@ -148,13 +149,18 @@ def predict_binding(out_path='../'):
                 label = i[1]
                 i = i[0]
 
-                info_dict = load_data_from_file(i)
+                try:
+                    info_dict = load_data_from_file(i)
+                    blockPrint()
+                    pred = model(info_dict)
+                    enablePrint()
+                except FileNotFoundError:
+                    pred=torch.tensor([[0.00]])
 
-                blockPrint()
-                pred = model(info_dict)
-                enablePrint()
-
-                accuarcy_list.append(str(label) + str(round(float(pred))))
+                try:
+                    accuarcy_list.append(str(label) + str(round(float(pred))))
+                except ValueError:
+                    continue
                 accuarcy_file_list.append(i)
                 pred_result_list.append(float(pred))
 
@@ -171,7 +177,7 @@ def predict_binding(out_path='../'):
                        'test_size': sum(accuarcy_dict.values()),
                        '1': accuarcy_dict['None1'], '0': accuarcy_dict['None0'],}
             print(accuarcy_dict, '')
-            test_result = test_result.append(new_row, ignore_index=1)
+            test_result= pd.concat([test_result, pd.DataFrame([new_row])], ignore_index=True)
         else:
             for term in ['11', '10', '01', '00']:
                 try:
@@ -187,12 +193,12 @@ def predict_binding(out_path='../'):
                        'test_size': sum(accuarcy_dict.values()),
                        '11': accuarcy_dict['11'], '10': accuarcy_dict['10'], '00': accuarcy_dict['00'],
                        '01': accuarcy_dict['01']}
-            test_result = test_result.append(new_row, ignore_index=1)
-        with open(out_path + select_param[:-3] + f'_test_{sum(accuarcy_dict.values())}_record.txt', "a") as f:
+            test_result= pd.concat([test_result, pd.DataFrame([new_row])], ignore_index=True)
+        with open(out_path + select_param[:-3] + f'_test_{sum(accuarcy_dict.values())}_record.txt', "w") as f:
             for r1, r2, r3 in zip(accuarcy_list, accuarcy_file_list, pred_result_list):
                 if 'None' in r1:
                     r1=r1[-1]
-                f.write(str(r1) + '\t' + str(r3) + "\t" + str(r2).split('/')[-1].split('_elicit_info.txt')[0] + "\n")
+                f.write(str(r1) + '\t' + str(r3) + "\t" + str(r2).split('/')[-1].split('_elicit_info.txt')[0] +'\t'+select_param[:-3]+ "\n")
 
     pd.set_option('display.max_rows', 500)
     print(test_result)
@@ -209,7 +215,7 @@ if __name__ == '__main__':
     model = sugar_binding_predictor(device=device, deg=deg, fragment_cluster=1, sugar_cluster=None)
     loss_func = torch.nn.L1Loss()
 
-
+    print('\n\nprocessing sample...')
     test_only_set=load_sample()
     predict_binding(out_path=args.out_dir)
 

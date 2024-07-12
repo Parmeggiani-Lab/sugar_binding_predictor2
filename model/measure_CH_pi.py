@@ -1,26 +1,16 @@
-##################################
-#
-# PyRosetta-depended script
-#
-##################################
 import ast
+import shutil
 import sys,os
-sys.path.remove('/home/tm21372/Rosetta/PyRosetta/setup')
 def blockPrint():
     sys.stdout = open(os.devnull, 'w')
 def enablePrint():
     sys.stdout = sys.__stdout__
-blockPrint()
 
-import pyrosetta; pyrosetta.init()
 import os
-from pyrosetta import *
-from rosetta.core.select import residue_selector as selections
-from rosetta.core import select
-from rosetta.core.pack.task import operation
 import numpy as np
 import math
-from pyrosetta.rosetta.core.chemical import ResidueProperty
+from tqdm import tqdm
+from pymol import cmd,stored
 
 def unit_vector(vector):
     """ Returns the unit vector of the vector.  """
@@ -82,9 +72,12 @@ def angle(a0,a1,a2):
     return angle
 
 def dihedral(a0,a1,a3,a4):
-    vec0=[a1[0]-a0[0],a1[1]-a0[1],a1[2]-a0[2]]
-    vec1 = [a3[0] - a0[0], a3[1] - a0[1], a3[2] - a0[2]]
-    vec2 = [a4[0] - a1[0], a4[1] - a1[1], a4[2] - a1[2]]
+    #vec0=[a1[0]-a0[0],a1[1]-a0[1],a1[2]-a0[2]]
+    #vec1 = [a3[0] - a0[0], a3[1] - a0[1], a3[2] - a0[2]]
+    #vec2 = [a4[0] - a1[0], a4[1] - a1[1], a4[2] - a1[2]]
+    vec0=[a3[0]-a1[0],a3[1]-a1[1],a3[2]-a1[2]]
+    vec1 = [a0[0] - a1[0], a0[1] - a1[1], a0[2] - a1[2]]
+    vec2 = [a4[0] - a3[0], a4[1] - a3[1], a4[2] - a3[2]]
 
     vec_pl1=[vec1[1]*vec0[2]-vec1[2]*vec0[1],vec1[2]*vec0[0]-vec1[0]*vec0[2],vec1[0]*vec0[1]-vec1[1]*vec0[0]]
     vec_pl2 = [vec0[1] * vec2[2] - vec0[2] * vec2[1], vec0[2] * vec2[0] - vec0[0] * vec2[2], vec0[0] * vec2[1] - vec0[1] * vec2[0]]
@@ -98,156 +91,147 @@ def dihedral(a0,a1,a3,a4):
         sup_angle=180
     return 180-sup_angle
 
+def dfs(graph, start, end):
+    fringe = [(start, [])]
+    while fringe:
+        state, path = fringe.pop()
+        if path and state == end:
+            yield path
+            continue
+        for next_state in graph[state]:
+            if next_state in path:
+                continue
+            fringe.append((next_state, path+[next_state]))
 
-known_sugar_ligand_dict={
-    'SGN':[['C1','C2','C3','C4','C5'],['H1','H2','H3','H4','H5']]
-}
-options = """
--ignore_unrecognized_res
--include_sugars
--auto_detect_glycan_connections
--maintain_links 
--alternate_3_letter_codes pdb_sugar
--write_glycan_pdb_codes
--ignore_zero_occupancy false 
--load_PDB_components 1
--no_fconfig
-"""
-
-init(" ".join(options.split('\n')))
+def find_unique_loops(g_1):
+    cycles = [path  for node in g_1 for path in dfs(g_1, node, node) if len(path)>2]
+    [i.sort() for i in cycles]
+    cycles=[list(x) for x in set(tuple(x) for x in cycles)]
+    #print(cycles)
+    return cycles
 
 
 
-def find_CH_pi_aromatic(pose):
-    sugar_selector = selections.ResiduePropertySelector()
-    sugar_property = ResidueProperty.CARBOHYDRATE
-    sugar_selector.set_property(sugar_property)
-    sugar_vec = sugar_selector.apply(pose)
-    sugar_list = vec_pm_select(sugar_vec)
-    print(sugar_list)
-    if sugar_list==[]:
-        sugar_selector = selections.ResiduePropertySelector()
-        sugar_property = ResidueProperty.LIGAND
-        sugar_selector.set_property(sugar_property)
-        sugar_vec = sugar_selector.apply(pose)
-        sugar_list = vec_pm_select(sugar_vec)
-        print('\n')
-        print('ligand list:',sugar_list)
-        print('\n')
-    # find CH of sugar
-    CH_list = []
-    for sugar in sugar_list:
-        # print(pose.residue(int(sugar)))
-        resinfo = str(pose.residue(int(sugar))).split('\n')[6].split()
-        if resinfo[0] != 'Ring': #### recognize as ligand
-            if (str(pose.residue(int(sugar))).split('\n')[1].split()[1]) in known_sugar_ligand_dict:
-                sugar_ligand=(str(pose.residue(int(sugar))).split('\n')[1].split()[1])
-                print('recogize '+sugar_ligand+' : '+str(known_sugar_ligand_dict[sugar_ligand]))
-                C_of_CH_list=known_sugar_ligand_dict[sugar_ligand][0]
-                H_of_CH_list=known_sugar_ligand_dict[sugar_ligand][1]
-                for i,Hi in zip(C_of_CH_list,H_of_CH_list):  # sugarid_C_H
-                    C_id = pose.residue(int(sugar)).atom_index(i)
-                    # print(C_id)
-                    H_id = pose.residue(int(sugar)).atom_index(Hi)
-                    # print(str(sugar)+'_'+str(C_id)+'_'+str(H_id))
-                    C_coord = pose.residue(int(sugar)).xyz(C_id)
-                    # print('\tC_coord:',C_coord)
-                    H_coord = pose.residue(int(sugar)).xyz(H_id)
-                    # print('\tH_coord:', H_coord)
-                    CH_vec = C_coord - H_coord
-                    #pose.residue(int(sugar)).name()
-                    CH_list.append(
-                        [str(pose.pdb_info().number(int(sugar))) + '_' + i, sugar_ligand,
-                         [float(C_coord[0]), float(C_coord[1]), float(C_coord[2])], np.array(CH_vec),
-                         [float(H_coord[0]), float(H_coord[1]), float(H_coord[2])]])
+def find_CH_pi_aromatic_pymol(loc,each_file):
+    cmd.reinitialize()
+    cmd.load(loc+each_file)
+    ###save ligand with H, and interacting aromatic ring
+    cmd.select('ligand','not polymer')
+    cmd.h_add('ligand')
+    cmd.select('ligand', 'not polymer')
+    cmd.select('aromatic_ring','(byres(ligand around 4.71) and (////HIS or ////TRP or ////PHE or ////TYR))')
+    cmd.remove('not (ligand or aromatic_ring)')
+    cmd.remove('hydrogen and aromatic_ring')
 
-                #print(CH_list)
+    cmd.remove('/////OH and ////TYR')
+    cmd.select('aromatic_ring', '(byres(ligand around 4.71) and (////HIS or ////TRP or ////PHE or ////TYR)) ')
+    cmd.remove('not (ligand or aromatic_ring)')
+    cmd.zoom()
+    # cmd.save(loc + each_file[:-4] + '.pse') ## debug
 
-            else:
-                raise TypeError
-        else: #### recognize as normal sugar
-            C_of_CH_list = [i for i in resinfo[2:] if i[0] == 'C']
+    ### load .pdb record
+    cmd.set('pdb_conect_all', 'on')
+    cmd.save(loc + each_file[:-4] + '_measuring.ent')
+    with open(loc + each_file[:-4] + '_measuring.ent','r') as read_record:
+        context_line=read_record.readlines()
+        read_record.close()
+    os.remove(loc + each_file[:-4] + '_measuring.ent')
+    atom_line = [i for i in context_line if i[:4] == 'HETA' or i[:4] == 'ATOM']
+    sugar_line = [i for i in context_line if i[:4] == 'HETA']
+    if sugar_line == []:
+        return 'No recognized sugar'
+    link_line = [i for i in context_line if i[:4] == 'CONE']
+    check_new_sugar = [
+        [i[:4], i[7:11].split()[0], i[12:16].split()[0], i[17:21].split()[0], i[22:30].split()[0], i[77:78].split()[0],np.array([float(i[31:38].split()[0]), float(i[39:45].split()[0]), float(i[47:56].split()[0])])]
+        for i in atom_line ]
+    new_sugar_residx_atomidx = {}  ### new sugar id - atom id
+    info_dict={}
+    for i in check_new_sugar:
+        new_sugar_residx_atomidx[i[1]] = i[4]
+        info_dict[i[1]]=i
+    #print(new_sugar_residx_atomidx)
+    link_record_dict = {}
+    for i in link_line:
+        atom1 = i.split()[1]
+        atom_tar = [atom for atom in i.split()[2:] if atom in new_sugar_residx_atomidx]
+        if atom_tar != [] and atom1 in new_sugar_residx_atomidx:
+            link_record_dict[atom1] = atom_tar
 
-            print(C_of_CH_list)
+    loops_in_graph = find_unique_loops(link_record_dict)  ### find loop in linking record
+    #print('loop:',loops_in_graph)
 
-            for i in C_of_CH_list:  # sugarid_C_H
-                C_id = pose.residue(int(sugar)).atom_index(i)
-                #print(C_id)
-                try:
-                    H_id = [i for i in pose.residue(int(sugar)).get_hydrogens_bonded_to_ring_atom(C_id)][0]
-                    # print(str(sugar)+'_'+str(C_id)+'_'+str(H_id))
-                    C_coord = pose.residue(int(sugar)).xyz(C_id)
-                    #print('\tC_coord:',C_coord)
-                    H_coord = pose.residue(int(sugar)).xyz(H_id)
-                    #print('\tH_coord:', H_coord)
-                    CH_vec = C_coord - H_coord
-                    CH_list.append([str(pose.pdb_info().number(int(sugar))) + '_' + i, pose.residue(int(sugar)).name(),
-                                    [float(C_coord[0]), float(C_coord[1]), float(C_coord[2])], np.array(CH_vec),[float(H_coord[0]), float(H_coord[1]), float(H_coord[2])]])
-                except IndexError: ## no H on this ring-C
-                    continue
-            #print(CH_list)
+    ### generate C-H pair
+    C_atom_on_sugar_loop=[i for i in list(set([atom for loop in loops_in_graph for atom in loop])) if info_dict[i][0]=='HETA' and info_dict[i][5]=='C']
+    #print('C_atom_on_sugar_loop:', C_atom_on_sugar_loop)
+    #print(check_new_sugar)
+    #print(link_record_dict)
 
-    nbr_selector = selections.NeighborhoodResidueSelector()
-    nbr_selector.set_focus_selector(sugar_selector)
-    nbr_selector.set_include_focus_in_subset(False)
-    neigbh_vec = nbr_selector.apply(pose)
-    neigbh_list = vec_pm_select(neigbh_vec)
-    aromatic_list = [int(i) for i in neigbh_list if pose.residue(int(i)).is_aromatic() == 1]
-    #print(aromatic_list)
+    CH_pair_list=[]
+    for i in C_atom_on_sugar_loop:
+        neigb_list=link_record_dict[i]#
+        for neigb in neigb_list:
+            if info_dict[neigb][5]=='H':
+                #CH_pair_list.append([i,neigb])
+                CH_pair_list.append(
+                        [info_dict[i][4] + '_' + info_dict[i][2]+'_' + info_dict[neigb][2], info_dict[i][3],
+                         info_dict[i][6], info_dict[i][6]-info_dict[neigb][6],
+                         info_dict[neigb][6] ])
+    #print('C-H pair',CH_pair_list)
 
-    # find aromatic ring massive center and vertical vector
-    aromatic_ring_list = []
-    for i in aromatic_list:
-        resinfo = str(pose.residue(int(i))).split('\n')[6].split()
-        if resinfo[0] != 'Ring':
-            print(pose.residue(i).name())
-            raise TypeError
-        # print(resinfo)
-        ring_coords_list = []
-        for j in resinfo[2:]:
-            # print(pose.residue(i).xyz(j))
-            ring_coords_list.append(pose.residue(i).xyz(j))
-        center = get_center(ring_coords_list)
-        aromatic_ring_list.append([i, pose.residue(i).name(), center[0], center[1]])
-        if pose.residue(i).name() == 'TRP':
-            resinfo = str(pose.residue(int(i))).split('\n')[7].split()
-            # print(resinfo)
-            if resinfo[0] != 'Ring':
-                raise TypeError
-            ring_coords_list = []
-            for j in resinfo[2:]:
-                # print(pose.residue(i).xyz(j))
-                ring_coords_list.append(pose.residue(i).xyz(j))
-            center = get_center(ring_coords_list)
-            aromatic_ring_list.append([i, str(pose.residue(i).name()) + '_B', center[0], center[1]])
-    #print(aromatic_ring_list)
+    ### get aromatic ring
+    aromatic_ring_list=[]
+    aromatic_loop_list=[ i for i in loops_in_graph if list((set([info_dict[j][0] for j in i])))==['ATOM'] and len(i)<=6]
+    for ring in aromatic_loop_list:
+        center=get_center([(info_dict[i][6]) for i in ring])
 
-    # calculate 3 term
+        #print('dihedral_atom',dihedral_atom_coord)
+        #print([info_dict[i][3] + '_' + info_dict[i][4] for i in ring], len(ring))
+        if info_dict[ring[0]][3]=='TRP' and len(ring)==6:
+            aromatic_ring_list.append([info_dict[ring[0]][4], 'TRP_B', center[0], center[1]])
+        else:
+            aromatic_ring_list.append([info_dict[ring[0]][4],info_dict[ring[0]][3], center[0], center[1]])
+
+
+
+    ### get Chi-2 of aromatic ring
+    dihedral_atom_list = ['N', 'CA', 'CB', 'CG']
+    for ring_info in aromatic_ring_list:
+        chi_measure_dict={}
+        for atom in check_new_sugar:
+            if atom[2] in dihedral_atom_list and atom[4]==ring_info[0]  :
+                chi_measure_dict[atom[2]]=(atom[1])#(atom[2]+'_'+atom[3]+'_'+atom[4])
+        #print(chi_measure_dict)
+        chi2=dihedral(info_dict[chi_measure_dict['N']][6],info_dict[chi_measure_dict['CA']][6],info_dict[chi_measure_dict['CB']][6],info_dict[chi_measure_dict['CG']][6])
+        #print('pymol_chi2',chi2)
+        ring_info.append(str(chi2))
+
+    #print('aromatic_loop', aromatic_ring_list)
 
     CH_pi_info_list = []
     for aromatic_ring in aromatic_ring_list:
-        for CH_pair in CH_list:
-            chi2_ori= float(pose.residue(int(aromatic_ring[0])).chi(2))
-            chi2=float("{:.2f}".format(chi2_ori))
+        for CH_pair in CH_pair_list:
+            chi2_ori = float(aromatic_ring[4])#float(pose.residue(int(aromatic_ring[0])).chi(2))
+            chi2 = float("{:.2f}".format(chi2_ori))
             C_X_dist = run_dist(CH_pair[2], aromatic_ring[2])
             H_X_dist = run_dist(CH_pair[4], aromatic_ring[2])
-            if H_X_dist<C_X_dist:
+            if H_X_dist < C_X_dist:
                 CH_vert_angle = angle_between(CH_pair[3], aromatic_ring[3])
                 if CH_vert_angle > 90:
                     CH_vert_angle = 180 - CH_vert_angle
                 CX_vec = np.array(aromatic_ring[2]) - np.array(CH_pair[2])
                 CX_vert_angle = angle_between(CX_vec, aromatic_ring[3])
                 Cp_X_dist = C_X_dist * np.sin(CX_vert_angle * np.pi / 180)
-                CH_pi_info_list.append([C_X_dist, CH_vert_angle, Cp_X_dist, pose.pdb_info().number(aromatic_ring[0]), aromatic_ring[1], CH_pair[0],chi2,
-                                        pose.pdb_info().name()])
-                #print(aromatic_ring[0],pose.pdb_info().number(aromatic_ring[0]))
+                CH_pi_info_list.append(
+                    [C_X_dist, CH_vert_angle, Cp_X_dist,aromatic_ring[0] , aromatic_ring[1],
+                     CH_pair[0], chi2,
+                     loc+each_file])
+                # print(aromatic_ring[0],pose.pdb_info().number(aromatic_ring[0]))
     return CH_pi_info_list
 
 def pose_CH_pi_score(CH_pi_aromatic_list):
     CH_pi_score=0
     CH_pi_record_list=[]
     for i in CH_pi_aromatic_list:
-
         #print(i)
         if i[0]<4.5: #C-X distance cutoff=4.5A
             if i[1]<40: #CH-Pi angle cutoff=40 degree
@@ -267,28 +251,41 @@ def pose_CH_pi_score(CH_pi_aromatic_list):
     print('CH_pi_score :',CH_pi_score)
     return CH_pi_score,CH_pi_record_list
 
-def measure_CH_pi(loc,each_file,out_record=1):
-    blockPrint()
-    pose_ori = pose_from_pdb(loc+each_file)
-    pose = Pose()
-    pose.assign(pose_ori)
+def measure_CH_pi(loc,each_file,out_record=1,out_path=None):
+    #blockPrint()
+    print('\n'+each_file)
 
-    CH_pi_aromatic_list=find_CH_pi_aromatic(pose)
+    CH_pi_aromatic_list=find_CH_pi_aromatic_pymol(loc,each_file)
+    #print('CH_pi_aromatic_list',len(CH_pi_aromatic_list),CH_pi_aromatic_list)
     result=pose_CH_pi_score(CH_pi_aromatic_list)
+
     CH_pi_score = result[0]
     CH_pi_record= result[1]
 
+    if out_path!=None:
+        out_path=out_path
+    else:
+        out_path=loc
+
     if out_record==1:
-        f = open(loc + 'CH_Pi_score.txt', 'a')
+        f = open(out_path + 'CH_Pi_score.txt', 'a')
         f.write(str(CH_pi_score)+'\t'+str(CH_pi_record)+'\t'+each_file.split('/')[-1]+'\t'+each_file+'\n')
         f.close()
+    #enablePrint()
     return CH_pi_record
 
 def main():
     loc='../example/test_pdb/'
-    pdb_files = [file for file in os.listdir(loc) if file[-4:] == '.pdb']
-    for pdb in pdb_files:
+    loc='/home/tm21372/Rosetta/workspace/2nd_design/new_res_design/natural_rescore/relaxed_native/'
+    loc='/home/tm21372/Rosetta/workspace/2nd_design/GLC/native/double_relax/'
+    loc='/home/tm21372/Rosetta/workspace/2nd_design/GLC/native/min/'
+    loc='/home/tm21372/Rosetta/workspace/DL/sugar-binding-predictor/example/CH_pi_update/'
+    pdb_files = [file for file in os.listdir(loc) if file[-4:] == '.pdb' ]
+    for pdb in tqdm(pdb_files):
+        #print(pdb)
         measure_CH_pi(loc,pdb)
+
+    #measure_CH_pi('/home/tm21372/Rosetta/workspace/2nd_design/GLC_control/','rel_2hph_0001.pdb')
 
 
 if __name__ == "__main__":

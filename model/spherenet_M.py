@@ -216,6 +216,7 @@ class update_v(torch.nn.Module):
 
     def forward(self, e, i):
         _, e2 = e
+        #print('e2: ', e2.size())
         v = scatter(e2, i, dim=0)
         print('v: ',v.size()) #torch.Size([42, 40])
         v = self.lin_up(v) #torch.Size([42, 256])
