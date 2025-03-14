@@ -27,16 +27,13 @@ pip install torch torch-sparse torch-scatter torch-cluster -f https://data.pyg.o
 pip install dive-into-graphs
 ```
 
-_data preprocessing part (PyMOL and PyRosetta depended):  _
+
+_data preprocessing part (PyMOL depended):  _
 ```sh
 conda install -c conda-forge -c schrodinger pymol-bundle  
 conda install -c conda-forge libnetcdf==4.7.3  
-Register PyRosetta:  https://els2.comotion.uw.edu/product/pyrosetta  
-download PyRosetta file (with python3.8 version)   
-tar -vjxf PyRosetta-<version>.tar.bz2  
-cd setup ; python setup.py install  
-import pyrosetta; pyrosetta.init() 
-```
+
+
 
  <h2 align="left">Running</h2>
 
@@ -57,8 +54,8 @@ Running option:
 `--model` : Model parameter for prediction, there are `well-trained` and `general` two options, in default both of them would be used.  
 
 
+
  <h2 align="left">Contact</h2>
 
  Yijie Luo [Jacky](https://github.com/Jacky233emm) -- yijie.luo@bristol.ac.uk
 
- 

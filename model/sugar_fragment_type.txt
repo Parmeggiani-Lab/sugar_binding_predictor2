@@ -1,0 +1,604 @@
+GLC_C1	14	6	 # 6-atom sugar ring
+GLC_C2	14	6	  # 6-atom sugar ring
+GLC_C3	14	6	  # 6-atom sugar ring
+GLC_C4	14	6	  # 6-atom sugar ring
+GLC_C5	14	6	  # 6-atom sugar ring
+GLC_O5	14	6	  # 6-atom sugar ring
+GLC_O	15	1	 # Oxygen
+GLC_O1	15	1	  # Oxygen
+GLC_O2	15	1	  # Oxygen
+GLC_O3	15	1	  # Oxygen
+GLC_O4	15	1	  # Oxygen
+GLC_C6	16	2	  # C-O
+GLC_O6	16	2	  # C-O
+
+Glc_C1	14	 6	  # 6-atom sugar ring
+Glc_C2	14	 6	  # 6-atom sugar ring
+Glc_C3	14	 6	  # 6-atom sugar ring
+Glc_C4	14	 6	  # 6-atom sugar ring
+Glc_C5	14	 6	  # 6-atom sugar ring
+Glc_O5	14	 6	  # 6-atom sugar ring
+Glc_O	15	 1	  # Oxygen
+Glc_O1	15	 1	  # Oxygen
+Glc_O2	15	 1	  # Oxygen
+Glc_O3	15	 1	  # Oxygen
+Glc_O4	15	 1	  # Oxygen
+Glc_C6	16	 2	  # C-O
+Glc_O6	16	 2	  # C-O
+
+BGC_C1	14	 6	  # 6-atom sugar ring
+BGC_C2	14	 6	  # 6-atom sugar ring
+BGC_C3	14	 6	  # 6-atom sugar ring
+BGC_C4	14	 6	  # 6-atom sugar ring
+BGC_C5	14	 6	  # 6-atom sugar ring
+BGC_O5	14	 6	  # 6-atom sugar ring
+BGC_O	15	 1	
+BGC_O1	15	 1	  # Oxygen
+BGC_O2	15	 1	  # Oxygen
+BGC_O3	15	 1	  # Oxygen
+BGC_O4	15	 1	  # Oxygen
+BGC_C6	16	 2	  # C-O
+BGC_O6	16	 2	  # C-O
+
+GAL_C1	14	 6	  # 6-atom sugar ring
+GAL_C2	14	 6	  # 6-atom sugar ring
+GAL_C3	14	 6	  # 6-atom sugar ring
+GAL_C4	14	 6	  # 6-atom sugar ring
+GAL_C5	14	 6	  # 6-atom sugar ring
+GAL_O5	14	 6	  # 6-atom sugar ring
+GAL_O	15	 1	
+GAL_O1	15	 1	  # Oxygen
+GAL_O2	15	 1	  # Oxygen
+GAL_O3	15	 1	  # Oxygen
+GAL_O4	15	 1	  # Oxygen
+GAL_C6	16	 2	  # C-O
+GAL_O6	16	 2	  # C-O
+
+NAG_C1	14	 6	 # 6-atom sugar ring
+NAG_C2	14	 6	 # 6-atom sugar ring
+NAG_C3	14	 6	 # 6-atom sugar ring
+NAG_C4	14	 6	 # 6-atom sugar ring
+NAG_C5	14	 6	 # 6-atom sugar ring
+NAG_O5	14	 6	 # 6-atom sugar ring
+NAG_O3	15	 1	  # Oxygen
+NAG_O4	15	 1	  # Oxygen
+NAG_O1	15	 1	  # Oxygen
+NAG_O	15	 1	  # Oxygen
+NAG_C6	16	 2	 # C-O
+NAG_O6	16	 2	 # C-O
+NAG_C7	17	4	 # amide
+NAG_C8	17	4	 # amide
+NAG_N2	17	4	 # amide
+NAG_O7	17	4	 # amide
+
+BDP_C1 	14	 6	 # 6-atom sugar ring
+BDP_C2 	14	 6	 # 6-atom sugar ring
+BDP_C3 	14	 6	 # 6-atom sugar ring
+BDP_C4 	14	 6	 # 6-atom sugar ring
+BDP_O5	14	 6	  # 6-atom sugar ring
+BDP_C5 	14	 6	 # 6-atom sugar ring
+BDP_O	15	 1	  # Oxygen
+BDP_O1	15	 1	  # Oxygen
+BDP_O2	15	 1	  # Oxygen
+BDP_O3	15	 1	  # Oxygen
+BDP_O4	15	 1	  # Oxygen
+BDP_C6 	18	3	 #COO
+BDP_O6A	18	3	 #COO
+BDP_O6B	18	3	 #COO
+
+GCU_C1	14	 6	  # 6-atom sugar ring
+GCU_C2	14	 6	  # 6-atom sugar ring
+GCU_C3	14	 6	  # 6-atom sugar ring
+GCU_C4	14	 6	  # 6-atom sugar ring
+GCU_O5	14	 6	  # 6-atom sugar ring
+GCU_C5	14	 6	  # 6-atom sugar ring
+GCU_O	15	 1	  # Oxygen
+GCU_O1	15	 1	  # Oxygen
+GCU_O2	15	 1	  # Oxygen
+GCU_O3	15	 1	  # Oxygen
+GCU_O4	15	 1	  # Oxygen
+GCU_C6	18	 3	  # COO
+GCU_O6A	18	 3	  # COO
+GCU_O6B	18	 3	  # COO
+
+XYS_C1	14	 6	  # 6-atom sugar ring
+XYS_C2	14	 6	  # 6-atom sugar ring
+XYS_C3	14	 6	  # 6-atom sugar ring
+XYS_C4	14	 6	  # 6-atom sugar ring
+XYS_O5	14	 6	  # 6-atom sugar ring
+XYS_C5	14	 6	  # 6-atom sugar ring
+XYS_O	15	 1	  # Oxygen
+XYS_O1	15	 1	  # Oxygen
+XYS_O2	15	 1	  # Oxygen
+XYS_O3	15	 1	  # Oxygen
+XYS_O4	15	 1	  # Oxygen
+
+SIA_C2	14	 6	  # 6-atom sugar ring
+SIA_C3	14	 6	  # 6-atom sugar ring
+SIA_C4	14	 6	  # 6-atom sugar ring
+SIA_C5	14	 6	  # 6-atom sugar ring
+SIA_C6	14	 6	  # 6-atom sugar ring
+SIA_O6	14	 6	  # 6-atom sugar ring
+SIA_N5	17	 4	  # amide
+SIA_C10	17	 4	  # amide
+SIA_C11	17	 4	  # amide
+SIA_O10	17	 4	  # amide
+SIA_O1	15	 1	  # Oxygen
+SIA_O4	15	 1	  # Oxygen
+SIA_O	15	 1	  # Oxygen
+SIA_C1	18	 3	  # COO
+SIA_1O1	18	 3	  # COO
+SIA_2O1	18	 3	  # COO
+SIA_O1A	18	 3	  # COO
+SIA_O1B	18	 3	  # COO
+SIA_O7	16	 2	  # C-O
+SIA_C7	16	 2	  # C-O
+SIA_O8	16	 2	  # C-O
+SIA_C8	16	 2	  # C-O
+SIA_O9	16	 2	  # C-O
+SIA_C9	16	 2	  # C-O
+
+SIA_O2	15	 1	  # Oxygen
+
+RIB_C1	14	 5	  # 5-atom sugar ring
+RIB_C2	14	 5	  # 5-atom sugar ring
+RIB_C3	14	 5	  # 5-atom sugar ring
+RIB_C4	14	 5	  # 5-atom sugar ring
+RIB_O4	14	 5	  # 5-atom sugar ring
+RIB_O	15	 1	  # Oxygen
+RIB_O1	15	 1	  # Oxygen
+RIB_O2	15	 1	  # Oxygen
+RIB_O3	15	 1	  # Oxygen
+RIB_C5	16	 2	  # C-O
+RIB_O5	16	 2	  # C-O
+
+Rib_C1	14	 5	  # 5-atom sugar ring
+Rib_C2	14	 5	  # 5-atom sugar ring
+Rib_C3	14	 5	  # 5-atom sugar ring
+Rib_C4	14	 5	  # 5-atom sugar ring
+Rib_O4	14	 5	  # 5-atom sugar ring
+Rib_O	15	 1	  # Oxygen
+Rib_O1	15	 1	  # Oxygen
+Rib_O2	15	 1	  # Oxygen
+Rib_O3	15	 1	  # Oxygen
+Rib_C5	16	 2	  # C-O
+Rib_O5	16	 2	  # C-O
+
+Fru_C2	14	 5	  # 5-atom sugar ring
+Fru_C3	14	 5	  # 5-atom sugar ring
+Fru_C4	14	 5	  # 5-atom sugar ring
+Fru_C5	14	 5	  # 5-atom sugar ring
+Fru_O5	14	 5	  # 5-atom sugar ring
+Fru_O2	15	 1	  # Oxygen
+Fru_O3	15	 1	  # Oxygen
+Fru_O4	15	 1	  # Oxygen
+Fru_C1	16	 2	  # C-O
+Fru_O1	16	 2	  # C-O
+Fru_C6	16	 2	  # C-O
+Fru_O6	16	 2	  # C-O
+
+MAN_C1	14	 6	  # 6-atom sugar ring
+MAN_C2	14	 6	  # 6-atom sugar ring
+MAN_C3	14	 6	  # 6-atom sugar ring
+MAN_C4	14	 6	  # 6-atom sugar ring
+MAN_C5	14	 6	  # 6-atom sugar ring
+MAN_O5	14	 6	  # 6-atom sugar ring
+MAN_O	15	 1	  # Oxygen
+MAN_O1	15	 1	  # Oxygen
+MAN_O2	15	 1	  # Oxygen
+MAN_O3	15	 1	  # Oxygen
+MAN_O4	15	 1	  # Oxygen
+MAN_C6	16	 2	  # C-O
+MAN_O6	16	 2	  # C-O
+
+FUC_C1	14	 6	  # 6-atom sugar ring
+FUC_C2	14	 6	  # 6-atom sugar ring
+FUC_C3	14	 6	  # 6-atom sugar ring
+FUC_C4	14	 6	  # 6-atom sugar ring
+FUC_C5	14	 6	  # 6-atom sugar ring
+FUC_O5	14	 6	  # 6-atom sugar ring
+FUC_O	15	 1	  # Oxygen
+FUC_O1	15	 1	  # Oxygen
+FUC_O2	15	 1	  # Oxygen
+FUC_O3	15	 1	  # Oxygen
+FUC_O4	15	 1	  # Oxygen
+FUC_C6	19	 1	  # Carbon
+
+ARA_C1	14	 6	  # 6-atom sugar ring
+ARA_C2	14	 6	  # 6-atom sugar ring
+ARA_C3	14	 6	  # 6-atom sugar ring
+ARA_C4	14	 6	  # 6-atom sugar ring
+ARA_C5	14	 6	  # 6-atom sugar ring
+ARA_O5	14	 6	  # 6-atom sugar ring
+ARA_O	15	 1	  # Oxygen
+ARA_O1	15	 1	  # Oxygen
+ARA_O2	15	 1	  # Oxygen
+ARA_O3	15	 1	  # Oxygen
+ARA_O4	15	 1	  # Oxygen
+
+G6P_C1	14	 6	  # 6-atom sugar ring
+G6P_C2	14	 6	  # 6-atom sugar ring
+G6P_C3	14	 6	  # 6-atom sugar ring
+G6P_C4	14	 6	  # 6-atom sugar ring
+G6P_C5	14	 6	  # 6-atom sugar ring
+G6P_O5	14	 6	  # 6-atom sugar ring
+G6P_O	15	 1	  # Oxygen
+G6P_O1	15	 1	  # Oxygen
+G6P_O2	15	 1	  # Oxygen
+G6P_O3	15	 1	  # Oxygen
+G6P_O4	15	 1	  # Oxygen
+G6P_C6	16	 2	  # C-O
+G6P_O6	16	 2	  # C-O
+G6P_P	20	 4	  # PO3
+G6P_OP1	20	 4	  # PO3
+G6P_OP2	20	 4	  # PO3
+G6P_OP3	20	 4	  # PO3
+G6P_O1P	20	 4	  # PO3
+G6P_O2P	20	 4	  # PO3
+G6P_O3P	20	 4	  # PO3
+
+BG6_C1	14	 6	  # 6-atom sugar ring
+BG6_C2	14	 6	  # 6-atom sugar ring
+BG6_C3	14	 6	  # 6-atom sugar ring
+BG6_C4	14	 6	  # 6-atom sugar ring
+BG6_C5	14	 6	  # 6-atom sugar ring
+BG6_O5	14	 6	  # 6-atom sugar ring
+BG6_O	15	 1	  # Oxygen
+BG6_O1	15	 1	  # Oxygen
+BG6_O2	15	 1	  # Oxygen
+BG6_O3	15	 1	  # Oxygen
+BG6_O4	15	 1	  # Oxygen
+BG6_C6	16	 2	  # C-O
+BG6_O6	16	 2	  # C-O
+BG6_P	20	 4	  # PO3
+BG6_OP1	20	 4	  # PO3
+BG6_OP2	20	 4	  # PO3
+BG6_OP3	20	 4	  # PO3
+BG6_O1P	20	 4	  # PO3
+BG6_O2P	20	 4	  # PO3
+BG6_O3P	20	 4	  # PO3
+
+NGA_C1	14	 6	  # 6-atom sugar ring
+NGA_C2	14	 6	  # 6-atom sugar ring
+NGA_C3	14	 6	  # 6-atom sugar ring
+NGA_C4	14	 6	  # 6-atom sugar ring
+NGA_C5	14	 6	  # 6-atom sugar ring
+NGA_O5	14	 6	  # 6-atom sugar ring
+NGA_O3	15	 1	  # Oxygen
+NGA_O4	15	 1	  # Oxygen
+NGA_O1	15	 1	  # Oxygen
+NGA_O	15	 1	  # Oxygen
+NGA_C6	16	 2	  # C-O
+NGA_O6	16	 2	  # C-O
+NGA_C7	17	 4	  # amide
+NGA_C8	17	 4	  # amide
+NGA_N2	17	 4	  # amide
+NGA_O7	17	 4	  # amide
+
+A2G_C1	14	 6	  # 6-atom sugar ring
+A2G_C2	14	 6	  # 6-atom sugar ring
+A2G_C3	14	 6	  # 6-atom sugar ring
+A2G_C4	14	 6	  # 6-atom sugar ring
+A2G_C5	14	 6	  # 6-atom sugar ring
+A2G_O5	14	 6	  # 6-atom sugar ring
+A2G_O3	15	 1	  # Oxygen
+A2G_O4	15	 1	  # Oxygen
+A2G_O1	15	 1	  # Oxygen
+A2G_O	15	 1	  # Oxygen
+A2G_C6	16	 2	  # C-O
+A2G_O6	16	 2	  # C-O
+A2G_C7	17	 4	  # amide
+A2G_C8	17	 4	  # amide
+A2G_N2	17	 4	  # amide
+A2G_O7	17	 4	  # amide
+
+SGN_C1 	14	 6	  # 6-atom sugar ring
+SGN_C2 	14	 6	  # 6-atom sugar ring
+SGN_C3 	14	 6	  # 6-atom sugar ring
+SGN_C4 	14	 6	  # 6-atom sugar ring
+SGN_C5 	14	 6	  # 6-atom sugar ring
+SGN_C6 	16	 2	  # C-O
+SGN_N2 	21	 1	  # NtrR
+SGN_O1 	15	 1	  # Oxygen
+SGN_O  	15	 1	  # Oxygen
+SGN_O3 	15	 1	  # Oxygen
+SGN_O4 	15	 1	  # Oxygen
+SGN_O5 	14	 6	  # 6-atom sugar ring
+SGN_O6 	16	 2	  # C-O
+SGN_S1 	22	 4	  # SO3
+SGN_O1S	22	 4	  # SO3
+SGN_O2S	22	 4	  # SO3
+SGN_O3S	22	 4	  # SO3
+SGN_S2 	22	 4	  # SO3
+SGN_O4S	22	 4	  # SO3
+SGN_O5S	22	 4	  # SO3
+SGN_O6S	22	 4	  # SO3
+
+#SGN_S2	22	 4	  # SO3
+SGN_1OS2	22	 4	  # SO3
+SGN_2OS2	22	 4	  # SO3
+SGN_3OS2	22	 4	  # SO3
+SGN_S6 	22	 4	  # SO3
+SGN_1OS6	22	 4	  # SO3
+SGN_2OS6	22	 4	  # SO3
+SGN_3OS6	22	 4	  # SO3
+
+ASG_C1 	14	 6	  # 6-atom sugar ring
+ASG_C2 	14	 6	  # 6-atom sugar ring
+ASG_C3 	14	 6	  # 6-atom sugar ring
+ASG_C4 	14	 6	  # 6-atom sugar ring
+ASG_C5 	14	 6	  # 6-atom sugar ring
+ASG_C6 	16	 2	  # C-O
+ASG_C7 	17	 4	  # amide
+ASG_C8 	17	 4	  # amide
+ASG_N2 	17	 4	  # amide
+ASG_O 	15	 1	  # Oxygen
+ASG_O1 	15	 1	  # Oxygen
+ASG_O3 	15	 1	  # Oxygen
+ASG_O4 	15	 1	  # Oxygen
+ASG_O5 	14	 6	  # 6-atom sugar ring
+ASG_O6 	16	 2	  # C-O
+ASG_O7 	17	 4	  # amide
+ASG_S 	22	 4	  # SO3
+ASG_OSA 	22	 4	  # SO3
+ASG_OSB 	22	 4	  # SO3
+ASG_OSC 	22	 4	  # SO3
+
+RP5_C1	14	 5	  # 5-atom sugar ring
+RP5_C2	14	 5	  # 5-atom sugar ring
+RP5_C3	14	 5	  # 5-atom sugar ring
+RP5_C4	14	 5	  # 5-atom sugar ring
+RP5_O4	14	 5	  # 5-atom sugar ring
+RP5_O	15	 1	  # Oxygen
+RP5_O1	15	 1	  # Oxygen
+RP5_O2	15	 1	  # Oxygen
+RP5_O3	15	 1	  # Oxygen
+RP5_C5	16	 2	  # C-O
+RP5_O5	16	 2	  # C-O
+"RP5_P"	20	 4	  # PO3
+RP5_O1X	20	 4	  # PO3
+RP5_O2X	20	 4	  # PO3
+RP5_O3X	20	 4	  # PO3
+
+IDY_C1	14	 6	  # 6-atom sugar ring
+IDY_C2	14	 6	  # 6-atom sugar ring
+IDY_C3	14	 6	  # 6-atom sugar ring
+IDY_C4	14	 6	  # 6-atom sugar ring
+IDY_C5	14	 6	  # 6-atom sugar ring
+IDY_O5	14	 6	  # 6-atom sugar ring
+IDY_O1	15	 1	  # Oxygen
+IDY_O2	15	 1	  # Oxygen
+IDY_O3	15	 1	  # Oxygen
+IDY_O4	15	 1	  # Oxygen
+IDY_C6	18	 3	  # COO
+IDY_O6A	18	 3	  # COO
+IDY_O6B	18	 3	  # COO
+IDY_S2	22	 4	  # SO3
+IDY_1OS2	22	 4	  # SO3
+IDY_2OS2	22	 4	  # SO3
+IDY_3OS2	22	 4	  # SO3
+IDY_CM	19	 1	  # Carbon
+
+GNX_C1	14	 6	  # 6-atom sugar ring
+GNX_C2	14	 6	  # 6-atom sugar ring
+GNX_C3	14	 6	  # 6-atom sugar ring
+GNX_C4	14	 6	  # 6-atom sugar ring
+GNX_C5	14	 6	  # 6-atom sugar ring
+GNX_O5	14	 6	  # 6-atom sugar ring
+GNX_O3	15	 1	  # Oxygen
+GNX_O4	15	 1	  # Oxygen
+GNX_O1	15	 1	  # Oxygen
+GNX_S2	22	 4	  # SO3
+GNX_1OS2	22	 4	  # SO3
+GNX_2OS2	22	 4	  # SO3
+GNX_3OS2	22	 4	  # SO3
+GNX_S3	22	 4	  # SO3
+GNX_1OS3	22	 4	  # SO3
+GNX_2OS3	22	 4	  # SO3
+GNX_3OS3	22	 4	  # SO3
+GNX_C6	16	 2	  # C-O
+GNX_O6	16	 2	  # C-O
+GNX_N2	21	 1	  # NtrR
+
+GNB_C1	14	 6	  # 6-atom sugar ring
+GNB_C2	14	 6	  # 6-atom sugar ring
+GNB_C3	14	 6	  # 6-atom sugar ring
+GNB_C4	14	 6	  # 6-atom sugar ring
+GNB_C5	14	 6	  # 6-atom sugar ring
+GNB_O5	14	 6	  # 6-atom sugar ring
+GNB_C6	16	 2	  # C-O
+GNB_O6	16	 2	  # C-O
+GNB_S2	22	 4	  # SO3
+GNB_1OS2	22	 4	  # SO3
+GNB_2OS2	22	 4	  # SO3
+GNB_3OS2	22	 4	  # SO3
+GNB_S6	22	 4	  # SO3
+GNB_1OS6	22	 4	  # SO3
+GNB_2OS6	22	 4	  # SO3
+GNB_3OS6	22	 4	  # SO3
+GNB_N2	21	 1	  # NtrR
+GNB_O1	15	 1	  # Oxygen
+GNB_O4	15	 1	  # Oxygen
+GNB_O3	15	 1	  # Oxygen
+
+SUS_C1	14	 6	  # 6-atom sugar ring
+SUS_C2	14	 6	  # 6-atom sugar ring
+SUS_C3	14	 6	  # 6-atom sugar ring
+SUS_C4	14	 6	  # 6-atom sugar ring
+SUS_C5	14	 6	  # 6-atom sugar ring
+SUS_O5	14	 6	  # 6-atom sugar ring
+SUS_S3	22	 4	  # SO3
+SUS_1OS3	22	 4	  # SO3
+SUS_2OS3	22	 4	  # SO3
+SUS_3OS3	22	 4	  # SO3
+SUS_S6	22	 4	  # SO3
+SUS_1OS6	22	 4	  # SO3
+SUS_2OS6	22	 4	  # SO3
+SUS_3OS6	22	 4	  # SO3
+SUS_N2	21	 1	  # NtrR
+SUS_S2	22	 4	  # SO3
+SUS_1OS2	22	 4	  # SO3
+SUS_2OS2	22	 4	  # SO3
+SUS_3OS2	22	 4	  # SO3
+SUS_C6	16	 2	  # C-O
+SUS_O6	16	 2	  # C-O
+SUS_O4	15	 1	  # Oxygen
+SUS_O3	15	 1	  # Oxygen
+
+
+IDS_C1	14	6   
+IDS_C2	14	6   
+IDS_O2	22	4   
+IDS_S2	22	4   
+IDS_C3	14	6   
+IDS_O3	15	1   
+IDS_C4	14	6   
+IDS_O4	15	1   
+IDS_C5	14	6   
+IDS_O5	14	6   
+IDS_C6	18	3   
+IDS_O6A	18	3   
+IDS_O6B	18	3   
+IDS_1OS2	22	4   
+IDS_2OS2	22	4   
+IDS_3OS2	22	4   
+GNM_CM	16	2   
+GNM_C1	14	6   
+GNM_O1	16	2   
+GNM_C2	14	6   
+GNM_N2	21	1   
+GNM_S2	22	4   
+GNM_C3	14	6   
+GNM_O3	22	4   
+GNM_S3	22	4   
+GNM_C4	14	6   
+GNM_O4	15	1   
+GNM_C5	14	6   
+GNM_O5	14	6   
+GNM_C6	16	2   
+GNM_O6	16	2   
+GNM_1OS2	22	4   
+GNM_2OS2	22	4   
+GNM_3OS2	22	4   
+GNM_1OS3	22	4   
+GNM_2OS3	22	4   
+GNM_3OS3	22	4   
+
+SUM_CM	16	2   
+SUM_C1	14	6   
+SUM_O1	16	2   
+SUM_C2	14	6   
+SUM_N2	21	1   
+SUM_S2	22	4   
+SUM_C3	14	6   
+SUM_O3	22	4   
+SUM_S3	22	4   
+SUM_C4	14	6   
+SUM_O4	15	1   
+SUM_C5	14	6   
+SUM_O5	14	6   
+SUM_C6	16	2   
+SUM_O6	15	1   
+SUM_S6	22	4   
+SUM_1OS2	22	4   
+SUM_2OS2	22	4   
+SUM_3OS2	22	4   
+SUM_1OS3	22	4   
+SUM_2OS3	22	4   
+SUM_3OS3	22	4   
+SUM_1OS6	22	4   
+SUM_2OS6	22	4   
+SUM_3OS6	22	4   
+
+BDM_CM	16	2   
+BDM_C1	14	6   
+BDM_O1	16	2   
+BDM_C2	14	6   
+BDM_O2	15	1   
+BDM_C3	14	6   
+BDM_O3	15	1   
+BDM_C4	14	6   
+BDM_O4	15	1   
+BDM_C5	14	6   
+BDM_O5	14	6   
+BDM_C6	18	3   
+BDM_O6A	18	3   
+BDM_O6B	18	3   
+
+SGM_CM	16	2   
+SGM_C1	14	6   
+SGM_O1	16	2   
+SGM_C2	14	6   
+SGM_N2	21	1   
+SGM_S2	22	4   
+SGM_C3	14	6   
+SGM_O3	15	1   
+SGM_C4	14	6   
+SGM_O4	15	1   
+SGM_C5	14	6   
+SGM_O5	14	6   
+SGM_C6	16	2   
+SGM_O6	15	1   
+SGM_S6	22	4   
+SGM_1OS2	22	4   
+SGM_2OS2	22	4   
+SGM_3OS2	22	4   
+SGM_1OS6	22	4   
+SGM_2OS6	22	4   
+SGM_3OS6	22	4   
+
+GNS_C1	14	6   
+GNS_C2	14	6   
+GNS_N2	21	1   
+GNS_S2	22	4   
+GNS_C3	14	6   
+GNS_O3	15	1   
+GNS_C4	14	6   
+GNS_O4	15	1   
+GNS_C5	14	6   
+GNS_O5	14	6   
+GNS_C6	16	2   
+GNS_O6	16	2   
+GNS_1OS2	22	4   
+GNS_2OS2	22	4   
+GNS_3OS2	22	4   
+IDM_CM	16	2   
+IDM_C1	14	6   
+IDM_O1	16	2   
+IDM_C2	14	6   
+IDM_O2	15	1   
+IDM_C3	14	6   
+IDM_O3	15	1   
+IDM_C4	14	6   
+IDM_O4	15	1   
+IDM_C5	14	6   
+IDM_O5	14	6   
+IDM_C6	18	3   
+IDM_O6A	18	3   
+IDM_O6B	18	3   
+
+GNG_CM	16	2   
+GNG_C1	14	6   
+GNG_O1	16	2   
+GNG_C2	14	6   
+GNG_N2	21	1   
+GNG_S2	22	4   
+GNG_C3	14	6   
+GNG_O3	22	4   
+GNG_S3	22	4   
+GNG_C4	14	6   
+GNG_O4	15	1   
+GNG_C5	14	6   
+GNG_O5	14	6   
+GNG_C6	16	2   
+GNG_O6	15	1   
+GNG_S6	22	4   
+GNG_1OS2	22	4   
+GNG_2OS2	22	4   
+GNG_3OS2	22	4   
+GNG_1OS3	22	4   
+GNG_2OS3	22	4   
+GNG_3OS3	22	4   
+GNG_1OS6	22	4   
+GNG_2OS6	22	4   
+GNG_3OS6	22	4   

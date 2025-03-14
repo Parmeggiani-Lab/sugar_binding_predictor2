@@ -4,8 +4,45 @@ import operator
 import torch,math
 import numpy as np
 from measure_CH_pi import measure_CH_pi
+from collections import Counter
 
+def blockPrint():
+    sys.stdout = open(os.devnull, 'w')
+def enablePrint():
+    sys.stdout = sys.__stdout__
 
+def dfs(graph, start, end):
+    fringe = [(start, [])]
+    while fringe:
+        state, path = fringe.pop()
+        if path and state == end:
+            yield path
+            continue
+        for next_state in graph[state]:
+            if next_state in path:
+                continue
+            fringe.append((next_state, path+[next_state]))
+
+def find_unique_loops(g_1):
+    cycles = [path  for node in g_1 for path in dfs(g_1, node, node) if len(path)>2]
+    [i.sort() for i in cycles]
+    cycles=[list(x) for x in set(tuple(x) for x in cycles)]
+    #print(cycles)
+    return cycles
+
+def load_sugar_fragment_database():
+    with open('sugar_fragment_type.txt', 'r') as fragment_type_file:
+        fragment_type_line = fragment_type_file.readlines()
+        fragment_type_file.close()
+
+    sugar_atom2fragment = {}
+    for i in fragment_type_line:
+        try:
+            sugar_atom2fragment[i.split('\t')[0].split()[0]] = [int(i.split('\t')[1].split()[0]), int(i.split('\t')[2].split()[0])]
+        except IndexError:
+            pass
+    current_sugar_list=list(set([i.split('_')[0].split()[0] for i in sugar_atom2fragment]))
+    return sugar_atom2fragment,current_sugar_list
 def get_edges(n_nodes):
     rows, cols = [], []
     for i in range(n_nodes):
@@ -17,374 +54,631 @@ def get_edges(n_nodes):
     edges = [rows, cols]
     edges = [torch.LongTensor(edges[0]), torch.LongTensor(edges[1])]
     return edges
-def data_preprocessing(loc,pdb,output_txt=1,output_CH_pi_record=1,max_len_seq=0,batch_size=1):
+def data_preprocessing(loc,pdb,output_txt=1,output_CH_pi_record=1,max_len_seq=0,batch_size=1,ignore_CH_pi=0,generate_file_only=0,debug_mode=0,out_path=None):
+   try:
+        blockPrint()
+        if out_path==None:
+            out_path=loc
 
-    CH_pi_info_dict={}
-    CH_pi_record=measure_CH_pi(loc, pdb,out_record=output_CH_pi_record)
-    CH_pi_info_dict[pdb[:-4]]=CH_pi_record
-
-
-
-    cmd.reinitialize()
-    cmd.load(loc + pdb)
-    cmd.remove('hydrogen')
-    cmd.remove("(not (alt +'A') )and ( polymer)")
-    cmd.remove('/////OXT')
-    cmd.alter('all',"alt=''")
-
-    #### find interacting residue
-    try:
-        CH_pi_info=CH_pi_info_dict[pdb[:-4]]
-        list_of_ch_pi=[]
-        for i in CH_pi_info:
-            if i.split('_')[1]=='TRB':
-                list_of_ch_pi.append('////' + 'TRP' + '`' + str(int(i.split('_')[0])-0))
-            else:
-                list_of_ch_pi.append('////' + i.split('_')[1] + '`' + str(int(i.split('_')[0])-0))
-
-
-        CH_pi_residue=' or '.join(list_of_ch_pi)
-    except KeyError:
-        CH_pi_residue=''
-    print('\tCH-pi residue',CH_pi_residue)
-
-
-    cmd.select('atom_NOS','symbol O+N+S')
-    cmd.select('polar_charged','(byres( ((not polymer) and '+pdb[:-4]+') around 3.5) and atom_NO) and (////ARG or ////HIS or ////LYS or ////ASP or ////GLU or ////Ser or ////THR or ////ASN or ////GLN or ////TYR)')
-
-
-
-    if CH_pi_residue!='':
-        cmd.select('aromatic',CH_pi_residue+' and ((not polymer) around 10)')
-        take_chi_pi_record = '1'
-    else:
-        cmd.select('aromatic', 'None')
-        take_chi_pi_record = '0'
-
-    cmd.remove('not (not polymer or polar_charged or aromatic)')
-    resi_num = cmd.select('ca', '/////CA')
-    if resi_num == 0:
-        return 'No interacting residue'
-
-    ### keep functional group
-
-    cmd.select('CH_pi_side', 'None')
-    cmd.select('CH_pi_sugar', 'None')
-    try:
-        CH_pi_info = CH_pi_info_dict[pdb[:-4]]
-        CH_pi_residue = '+'.join([i.split('_')[0] for i in CH_pi_info])
-        CH_pi_sugar = '+'.join([i.split('_')[2] for i in CH_pi_info])
-        # print(CH_pi_info)
-        # print(CH_pi_residue,CH_pi_sugar)
-        if CH_pi_residue != '':
-            cmd.select('CH_pi_side', 'sidechain and i. ' + CH_pi_residue + '')
-            cmd.select('CH_pi_sugar', 'i. ' + CH_pi_sugar + '')
-    except KeyError:
-        pass
-    # if print(cmd.select('////PRO')!=0):
-    #    print(pdb)
-
-    cmd.select('sc_1', 'byres((not polymer around 3.5) and sidechain) ')
-    cmd.select('sc_interacting', 'sc_1 and sidechain')
-    cmd.select('bb_1', 'byres((not polymer around 3.5) and backbone) ')
-    cmd.select('bb_interacting', 'bb_1 and backbone')
-
-    cmd.remove('not ( (not polymer) or sc_interacting or bb_interacting or CH_pi_side) or hydrogen')
-    # cmd.save(loc_out+pdb[:-8]+'elicit.pse')
-    for aa in aa_keep_atom_dict:
-        # print(aa,aa_keep_atom_dict[aa])
-        cmd.remove('(sc_interacting or CH_pi_side) and ////' + aa + ' and (not n. ' + aa_keep_atom_dict[aa] + ')')
-    cmd.alter('bb_interacting', 'resn="GLY"')
-
-    ##### keep only interacting sugar
-    cmd.select('inter_sugar', 'byres(polymer around 3.5)')
-    cmd.remove('(not polymer) and (not inter_sugar) and (not CH_pi_sugar)')
-
-    cmd.set('pdb_conect_all', 'on')
-    if cmd.select('not polymer') == 0 or cmd.select('polymer') == 0:
-        return 'No interacting fragment'
-    cmd.save(loc + 'elicit.pdb')
-
-
-    with open(loc + 'elicit.pdb', 'r') as pdb_file:
-        context_line = pdb_file.readlines()
-        pdb_file.close()
-    os.remove(loc + 'elicit.pdb')
-
-    #### generate input
-
-    atom_line = [i for i in context_line if i[:4] == 'HETA' or i[:4] == 'ATOM']
-    sugar_line = [i for i in context_line if i[:4] == 'HETA']
-    if sugar_line == []:
-        return 'No recognized sugar'
-    print('atom number: ', len(atom_line))
-    # print([[i[31:38].split()[0],i[39:45].split()[0],i[47:56].split()[0]] for i in atom_line])
-    atom_coord_list = np.array([[i[31:38].split()[0], i[39:45].split()[0], i[47:56].split()[0]] for i in
-                                atom_line])  ##################################################
-    atom_coord_list = atom_coord_list.astype(float)
-    resi_atom_name = [i[17:21].split()[0] + '_' + i[12:16].split()[0] for i in atom_line]
-
-    atomtype_list = [atom_type_dict[i] for i in resi_atom_name]  #########################################
-    print(resi_atom_name)
-    atomtype_id_list = [atomtype2id[atom_type_dict[i]] for i in resi_atom_name]  ##################
-    print('atomtype involved: ', len(list(set(atomtype_list))))
-    polartype_list = []  #############################
-    for i in atomtype_list:
-        if i[0] == 'N' or i[0] == 'O' or i[0] == 'S':
-            polartype_list.append('polar')
+        if ignore_CH_pi != 1:
+            out_file_name = pdb[:-4] + '_elicit_info.txt'
         else:
-            polartype_list.append('in-polar')
-    residue_id_list = [i[17:21].split()[0] + '_' + i[22:30].split()[0] for i in atom_line]  ###########################
-    print(residue_id_list)
+            out_file_name = pdb[:-4] + '_elicit_no_CH_pi_info.txt'
 
-    print('residues involved: ', len(list(set(residue_id_list))))
+        if os.path.exists(out_path+out_file_name)==1 and generate_file_only==1:
+            return 'file already exist'
 
-    atom_resi_id_list = [i[17:21].split()[0] + '_' + i[22:30].split()[0] + '_' + i[12:16].split()[0] for i in atom_line]
-    print(atom_resi_id_list)
-    print((set(atom_resi_id_list)))
-    if len(atom_resi_id_list) != len(set(atom_resi_id_list)):
-        return 'duplicate atom in data-preprocessing, skip'
-
-    atom_resi_id_list_for_sugar = [i[22:30].split()[0] + '_' + i[12:16].split()[0] for i in atom_line]
-    # print(atom_resi_id_list_for_sugar)
-
-    atompiece_list = []  ###### what type of fragment atom belong to
-    for i in resi_atom_name:
-        if i[:3] not in aa2fid:
-            atompiece_list.append(sugar_atom2fragment[i][0])
+        CH_pi_info_dict = {}
+        if ignore_CH_pi!=1:
+            CH_pi_record=measure_CH_pi(loc, pdb,out_record=output_CH_pi_record,out_path=out_path)
+            if CH_pi_record=='cannot_load_file':
+                enablePrint()
+                print('Cannot load '+loc+pdb)
+                blockPrint()
+                return 'Cannot load '+loc+pdb
+            CH_pi_info_dict[pdb[:-4]]=CH_pi_record
         else:
-            atompiece_list.append(aa2fid[i[:3]])
-    # print(atompiece_list)
-    # print(atomtype_list)
+            CH_pi_info_dict[pdb[:-4]]=''
 
-    atompos_list = []  ###### which fragment in molecule atom belong to, generate piece order, need sugar index first then residue index
-    piece_list = []
-    piece_id = 0
-    piece_type_b4 = ''
-    fragment_store = {}
-    for i, resi_id in enumerate(residue_id_list):
 
-        piece_id_b4 = piece_id
 
-        if residue_id_list[i] != residue_id_list[i - 1]:
-            # print(residue_id_list[i])
-            if i > 0:
-                if resi_id[:3] not in aa2fid:
-                    pass
+        cmd.reinitialize()
+        cmd.load(loc + pdb,'pair_complex')
+        cmd.remove('hydrogen')
+        #cmd.remove("(not polymer)")
+        cmd.remove('/////OXT')
+        cmd.alter('all',"alt=''")
+
+        #### find interacting residue
+        try:
+            CH_pi_info=CH_pi_info_dict[pdb[:-4]]
+            list_of_ch_pi=[]
+            for i in CH_pi_info:
+                if i.split('_')[1]=='TRB':
+                    list_of_ch_pi.append('////' + 'TRP' + '`' + str(int(i.split('_')[0])-0))
                 else:
-                    # atompos_list.append(piece_id)
+                    list_of_ch_pi.append('////' + i.split('_')[1] + '`' + str(int(i.split('_')[0])-0))
 
-                    piece_list.append(aa2fid[residue_id_list[i][:3]])
-                    if piece_id < piece_id_b4 + 1:
+
+            CH_pi_residue=' or '.join(list_of_ch_pi)
+        except KeyError:
+            CH_pi_residue=''
+
+        #blockPrint()
+        print('\tCH-pi residue',CH_pi_residue)
+
+
+        cmd.select('atom_NOS','symbol O+N+S')
+        cmd.select('polar_charged','(byres( ((not polymer) and pair_complex) around 3.5) and atom_NO) and (////ARG or ////HIS or ////LYS or ////ASP or ////GLU or ////Ser or ////THR or ////ASN or ////GLN or ////TYR)')
+        #cmd.save(loc+'test.pse')
+
+
+        if CH_pi_residue!='':
+            cmd.select('aromatic',CH_pi_residue+' and ((not polymer) around 10)')
+            take_chi_pi_record = '1'
+        else:
+            cmd.select('aromatic', 'None')
+            take_chi_pi_record = '0'
+
+        cmd.remove('not (not polymer or polar_charged or aromatic)')
+        resi_num = cmd.select('ca', '/////CA')
+
+
+        if debug_mode==1:
+            cmd.save(loc + pdb[:-4] + '_resi.pdb')
+
+        if resi_num == 0:
+            return 'No interacting residue'
+
+        ### keep functional group
+
+        cmd.select('CH_pi_side', 'None')
+        cmd.select('CH_pi_sugar', 'None')
+        try:
+            CH_pi_info = CH_pi_info_dict[pdb[:-4]]
+            CH_pi_residue = '+'.join([i.split('_')[0] for i in CH_pi_info])
+            CH_pi_sugar = '+'.join([i.split('_')[2] for i in CH_pi_info])
+            # print(CH_pi_info)
+            # print(CH_pi_residue,CH_pi_sugar)
+            if CH_pi_residue != '':
+                cmd.select('CH_pi_side', 'sidechain and i. ' + CH_pi_residue + '')
+                cmd.select('CH_pi_sugar', 'i. ' + CH_pi_sugar + '')
+        except KeyError:
+            pass
+        # if print(cmd.select('////PRO')!=0):
+        #    print(pdb)
+
+        cmd.select('sc_1', 'byres((not polymer around 3.5) and sidechain) ')
+        cmd.select('sc_interacting', 'sc_1 and sidechain')
+        cmd.select('bb_1', 'byres((not polymer around 3.5) and backbone) ')
+        cmd.select('bb_interacting', 'bb_1 and backbone')
+
+        cmd.remove('not ( (not polymer) or sc_interacting or bb_interacting or CH_pi_side) or hydrogen')
+        # cmd.save(loc_out+pdb[:-8]+'elicit.pse')
+        for aa in aa_keep_atom_dict:
+            # print(aa,aa_keep_atom_dict[aa])
+            cmd.remove('(sc_interacting or CH_pi_side) and ////' + aa + ' and (not n. ' + aa_keep_atom_dict[aa] + ')')
+        cmd.alter('bb_interacting', 'resn="GLY"')
+
+        ##### keep only interacting sugar
+        cmd.select('inter_sugar', 'byres(polymer around 3.5)')
+        cmd.remove('(not polymer) and (not inter_sugar) and (not CH_pi_sugar)')
+
+        cmd.set('pdb_conect_all', 'on')
+        if cmd.select('not polymer') == 0 or cmd.select('polymer') == 0:
+            return 'No interacting fragment'
+
+
+
+        if ignore_CH_pi!=1:
+            elict_file_name= pdb[:-4] + '_elicit.pdb'
+        else:
+            elict_file_name = pdb[:-4] + '_elicit_no_CH_pi.pdb'
+
+        cmd.alter('all','segi=""')
+        cmd.sort()
+        cmd.save(loc+elict_file_name)
+        with open(loc + elict_file_name, 'r') as pdb_file:
+            context_line = pdb_file.readlines()
+            pdb_file.close()
+
+
+
+        #### generate input
+
+        atom_line = [i for i in context_line if i[:4] == 'HETA' or i[:4] == 'ATOM']
+        sugar_line = [i for i in context_line if i[:4] == 'HETA']
+        if sugar_line == []:
+            return 'No recognized sugar'
+        print('atom number: ', len(atom_line))
+        # print([[i[31:38].split()[0],i[39:45].split()[0],i[47:56].split()[0]] for i in atom_line])
+        atom_coord_list = np.array([[i[31:38].split()[0], i[39:45].split()[0], i[47:56].split()[0]] for i in
+                                    atom_line])  ##################################################
+        atom_coord_list = atom_coord_list.astype(float)
+        resi_atom_name = [i[17:21].split()[0] + '_' + i[12:16].split()[0] for i in atom_line]
+
+        #### check new sugar
+        check_new_sugar=[[i[:4],i[7:11].split()[0],i[12:16].split()[0],i[17:21].split()[0],i[22:30].split()[0],i[77:78].split()[0]] for i in atom_line if i[17:21].split()[0] + '_' + i[12:16].split()[0] not in atom_type_dict]
+        if check_new_sugar!=[]:
+            enablePrint()
+            print('new sugar type found:',list(set([i[0]+'_'+i[3] for i in check_new_sugar])),'in ',pdb)
+            link_line = [i for i in context_line if i[:4] == 'CONE']
+            new_sugar_residx_atomidx={} ### new sugar id - atom id
+            for i in check_new_sugar:
+                new_sugar_residx_atomidx[i[1]]=i[4]
+            print(new_sugar_residx_atomidx)
+            link_record_dict={}
+            for i in link_line:
+                atom1=i.split()[1]
+                atom_tar=[atom for atom in i.split()[2:] if atom in new_sugar_residx_atomidx]
+                if atom_tar!=[] and atom1 in new_sugar_residx_atomidx:
+                    link_record_dict[atom1]=atom_tar
+
+            loops_in_graph=find_unique_loops(link_record_dict) ### find loop in linking record
+
+            new_element_type_atomidx={} ###  element- atom id
+            for i in check_new_sugar:
+                new_element_type_atomidx[i[1]]=i[5]
+            new_sugar_atom_name_atomidx = {}  ### new sugar name-atom name - atom id
+            for i in check_new_sugar:
+                new_sugar_atom_name_atomidx[i[1]]=[i[3],i[2]]
+            loops_atom_in_sugar=[]     ### check loops are in one residue
+            loops_in_sugar=[]
+            #print(check_new_sugar[0])
+            for loop in loops_in_graph:
+                print(loop)
+                check_loop_in_molecule=[new_sugar_residx_atomidx[i] for i in loop]
+                if len(list(set(check_loop_in_molecule)))==1:
+                    loops_atom_in_sugar.extend(loop)
+                    loops_in_sugar.append(loop)
+            #print(loops_atom_in_sugar)
+            new_sugar_fragment_type_info={}
+            new_sugar_atom_type_info={}
+            for i in check_new_sugar:
+                defined_atom_type=''
+                defined_fragment_type=''
+                i_residue_atomname=[i[3],i[2]]
+                i_element=i[5]
+                i_atomidx=i[1]
+                neigbor_idx_list=link_record_dict[i_atomidx]
+                loop_neigbor_idx=[ atom for atom in link_record_dict[i_atomidx] if atom in loops_atom_in_sugar]
+                #not_loop_neigbor_resi_atom_name_list = [new_sugar_atom_name_atomidx[atom] for atom in link_record_dict[i_atomidx] if atom not in loops_atom_in_sugar]
+                not_loop_neigbor_element_list = [new_element_type_atomidx[atom] for atom in link_record_dict[i_atomidx] if atom not in loops_atom_in_sugar]
+                not_loop_neigbor_in_loop_list=[atom in  loops_atom_in_sugar for atom in link_record_dict[i_atomidx] if atom not in loops_atom_in_sugar]
+                not_loop_neigbor_neigbor_idx_list=[ link_record_dict[atom] for atom in link_record_dict[i_atomidx] if atom not in loops_atom_in_sugar]
+                not_loop_neigbor_neigbor_element_list=[]
+                for n1 in not_loop_neigbor_neigbor_idx_list:
+                    not_loop_neigbor_neigbor_element_list.append([ new_element_type_atomidx[n2] for n2 in n1])
+                if not_loop_neigbor_neigbor_element_list==[]:
+                    not_loop_neigbor_neigbor_element_list=[[]]
+                neigbor_number = len(neigbor_idx_list)
+                #### element type
+                if i_element == 'C':
+                    if i_atomidx in loops_atom_in_sugar : #### if C in loop
+                        loop_len=[len(loop) for loop in loops_in_sugar if i_atomidx in loop][0]
+                        defined_atom_type='CH'+str(4-neigbor_number)
+                        defined_fragment_type=[14,loop_len]
+                    if Counter(not_loop_neigbor_element_list)['O']==2: #### if C not in loop and connect to 2 O, then COO
+                        defined_atom_type = 'COO'
+                        defined_fragment_type = [18, 3]
+                    if Counter(not_loop_neigbor_element_list)['O']==1 and len(loop_neigbor_idx)<=1: #### if C connect to 1 O and loop or not, then C-O
+                        defined_atom_type = 'CH'+str(4-neigbor_number)
+                        defined_fragment_type = [16, 2]
+                    if Counter(not_loop_neigbor_element_list)['O'] == 1 and Counter(not_loop_neigbor_element_list)['N'] == 1 and Counter(not_loop_neigbor_element_list)['C'] == 1: ## amide sp2 C
+                        defined_atom_type = 'CNH2'
+                        defined_fragment_type = [17, 4]
+                    if defined_atom_type=='':
+                        defined_atom_type = 'CH'+str(4-neigbor_number)
+                        if Counter(not_loop_neigbor_neigbor_element_list[0])['O'] == 1 and Counter(not_loop_neigbor_neigbor_element_list[0])['N'] == 1 and Counter(not_loop_neigbor_neigbor_element_list[0])['C'] == 1:
+                            defined_fragment_type = [17, 4] ## amide sp3 C
+                        else:
+                            defined_fragment_type = [19, 1] ## singe C
+                elif i_element == 'N':
+                    if Counter(not_loop_neigbor_neigbor_element_list[0])['O'] == 1 and Counter(not_loop_neigbor_neigbor_element_list[0])['N'] == 1 and Counter(not_loop_neigbor_neigbor_element_list[0])['C'] == 1:
+                        defined_atom_type = 'NH2O'
+                        defined_fragment_type = [17, 4]  ## amide sp2 N
+                    if not_loop_neigbor_element_list==['S']: ## N-SO4
+                        defined_atom_type = 'NtrR'
+                        defined_fragment_type = [21, 1]
+                elif i_element == 'S':
+                    if Counter(not_loop_neigbor_element_list)['O'] >= 3:  #### -SO3
+                        defined_atom_type = 'SO4'
+                        defined_fragment_type = [22, 4]
+                elif i_element == 'P':
+                    if Counter(not_loop_neigbor_element_list)['O'] == 3:  #### -PO3
+                        defined_atom_type = 'Phos'
+                        defined_fragment_type = [20, 4]
+                elif i_element == 'O':
+                    if i_atomidx in loops_atom_in_sugar : #### O in loop
+                        loop_len=[len(loop) for loop in loops_in_sugar if i_atomidx in loop][0]
+                        defined_atom_type='OS'
+                        defined_fragment_type=[14,loop_len]
+
+
+                    if Counter(not_loop_neigbor_neigbor_element_list[0])['O'] == 1 and Counter(not_loop_neigbor_neigbor_element_list[0])['N'] == 1 and Counter(not_loop_neigbor_neigbor_element_list[0])['C'] == 1:
+                        defined_atom_type = 'ONH2'
+                        defined_fragment_type = [17, 4]  ## amide sp2 O
+                    if Counter(not_loop_neigbor_neigbor_element_list[0])['O']>=2  : ## neigbour connect to 2 O
+                        defined_atom_type = 'OOC'
+                        if not_loop_neigbor_element_list==['S']:
+                            defined_fragment_type = [22, 4]  ## SO4
+                        if not_loop_neigbor_element_list == ['C']:
+                            defined_fragment_type = [18, 3]  ## COO
+                        if not_loop_neigbor_element_list == ['P']:
+                            defined_fragment_type = [20, 4]  ## PO4
+
+                    if defined_atom_type=='':
+                        defined_atom_type='OH'
+                        if not_loop_neigbor_element_list==['C']:
+                            defined_fragment_type = [16, 2]  ## C-O
+                        else:
+                            defined_fragment_type = [15, 1] #-OH
+
+                if defined_atom_type=='' or defined_fragment_type=='':
+                    print(i_atomidx, i_element, i_residue_atomname, i_atomidx in loops_atom_in_sugar,
+                          len(loop_neigbor_idx), not_loop_neigbor_element_list, not_loop_neigbor_in_loop_list,
+                          not_loop_neigbor_neigbor_element_list)
+                    print('\t', defined_atom_type, defined_fragment_type)  # ,
+
+                new_sugar_atom_type_info['_'.join(i_residue_atomname)] = defined_atom_type
+                new_sugar_fragment_type_info['_'.join(i_residue_atomname)] = defined_fragment_type
+                #
+
+
+                #
+
+            print('new defined atom added: ',len(new_sugar_fragment_type_info),len(new_sugar_atom_type_info))
+            for i in new_sugar_fragment_type_info:
+                sugar_atom2fragment[i]=new_sugar_fragment_type_info[i]
+            for i in new_sugar_atom_type_info:
+                atom_type_dict[i] = new_sugar_atom_type_info[i]
+
+            print('Appending new sugar to database..')
+            print(new_sugar_fragment_type_info)
+            with open('sugar_fragment_type.txt','a') as append_new_define_fragement:
+                append_new_define_fragement.write('\n')
+                for i in new_sugar_fragment_type_info:
+                    append_new_define_fragement.write('{}\t{}\t{}   \n'.format(i,new_sugar_fragment_type_info[i][0],new_sugar_fragment_type_info[i][1]))
+                append_new_define_fragement.close()
+            print(new_sugar_atom_type_info)
+            with open('atom_type_old.txt','a') as append_new_define_atom:
+                append_new_define_atom.write('\n')
+                for i in new_sugar_atom_type_info:
+                    append_new_define_atom.write('{} {} {}   \n'.format(i.split('_')[0],i.split('_')[1],new_sugar_atom_type_info[i]))
+                append_new_define_atom.close()
+            blockPrint()
+        if debug_mode ==0:
+            os.remove(loc + elict_file_name)
+
+        atomtype_list = [atom_type_dict[i] for i in resi_atom_name]  #########################################
+        print(resi_atom_name)
+        atomtype_id_list = [atomtype2id[atom_type_dict[i]] for i in resi_atom_name]  ##################
+        print('atomtype involved: ', len(list(set(atomtype_list))))
+        polartype_list = []  #############################
+        for i in atomtype_list:
+            if i[0] == 'N' or i[0] == 'O' or i[0] == 'S':
+                polartype_list.append('polar')
+            else:
+                polartype_list.append('in-polar')
+        residue_id_list = [i[17:21].split()[0] + '_' + i[22:30].split()[0] for i in atom_line]  ###########################
+        print(residue_id_list)
+
+        print('residues involved: ', len(list(set(residue_id_list))))
+
+        atom_resi_id_list = [i[17:21].split()[0] + '_' + i[22:30].split()[0] + '_' + i[12:16].split()[0] for i in atom_line]
+        print(atom_resi_id_list)
+        print((set(atom_resi_id_list)))
+        if len(atom_resi_id_list) != len(set(atom_resi_id_list)):
+            return 'duplicate atom in data-preprocessing, skip'
+
+        atom_resi_id_list_for_sugar = [i[22:30].split()[0] + '_' + i[12:16].split()[0] for i in atom_line]
+        #print(atom_resi_id_list_for_sugar)
+
+        atompiece_list = []  ###### what type of fragment atom belong to
+        for i in resi_atom_name:
+            if i[:3] not in aa2fid:
+                #print(i,sugar_atom2fragment[i])
+                atompiece_list.append(sugar_atom2fragment[i][0]) ### fragment type not defined
+            else:
+                atompiece_list.append(aa2fid[i[:3]])
+        # print(atompiece_list)
+        # print(atomtype_list)
+
+        atompos_list = []  ###### which fragment in molecule atom belong to, generate piece order, need sugar index first then residue index
+        piece_list = []
+        piece_id = 0
+        piece_type_b4 = ''
+        fragment_store = {}
+        for i, resi_id in enumerate(residue_id_list):
+
+            piece_id_b4 = piece_id
+
+            if residue_id_list[i] != residue_id_list[i - 1]:
+                # print(residue_id_list[i])
+                if i > 0:
+                    if resi_id[:3] not in aa2fid:
+                        pass
+                    else:
+                        # atompos_list.append(piece_id)
+
+                        piece_list.append(aa2fid[residue_id_list[i][:3]])
+                        if piece_id < piece_id_b4 + 1:
+                            piece_id += 1
+
+            if resi_id[:3] not in aa2fid:
+                piece_type_id = sugar_atom2fragment[resi_atom_name[i]]
+                if (piece_type_id[0] not in fragment_store) or (fragment_store[piece_type_id[0]][0] == 0):
+                    fragment_remain = piece_type_id[1]
+                    if i == 0 or piece_type_b4 == 'resi':
                         piece_id += 1
+                        atompos_list.append(piece_id)
+                        fragment_store[piece_type_id[0]] = [fragment_remain - 1, 1]
 
-        if resi_id[:3] not in aa2fid:
-            piece_type_id = sugar_atom2fragment[resi_atom_name[i]]
-            if (piece_type_id[0] not in fragment_store) or (fragment_store[piece_type_id[0]][0] == 0):
-                fragment_remain = piece_type_id[1]
-                if i == 0 or piece_type_b4 == 'resi':
+                    else:
+                        atompos_list.append(piece_id)
+                        fragment_store[piece_type_id[0]] = [fragment_remain - 1, piece_id]
+
                     piece_id += 1
-                    atompos_list.append(piece_id)
-                    fragment_store[piece_type_id[0]] = [fragment_remain - 1, 1]
-
+                    piece_list.append(piece_type_id[0])
                 else:
+                    fragment_store[piece_type_id[0]][0] -= 1
+                    atompos_list.append(fragment_store[piece_type_id[0]][1])
+                piece_type_b4 = 'sugar'
+                # print(fragment_store,piece_id)
+            else:
+                piece_type_b4 = 'resi'
+                try:
+                    if piece_id > atompos_list[-1] + 1:
+                        piece_id -= 1
                     atompos_list.append(piece_id)
-                    fragment_store[piece_type_id[0]] = [fragment_remain - 1, piece_id]
+                except IndexError:
+                    pass
+            # print(piece_id,piece_type_b4)
+        piece_list.insert(0, 0)
+        piece_list.append(0)
+        # print(piece_list)
+        if len(piece_list) > max_len_seq:
+            max_len_seq = len(piece_list)
+        #len_seq_record.append(len(piece_list))
 
-                piece_id += 1
-                piece_list.append(piece_type_id[0])
+        ############# edge info
+        try:
+            CH_pi_info = CH_pi_info_dict[pdb[:-4]]
+        except KeyError:
+            CH_pi_info = []
+        print(CH_pi_info)
+
+        print('CH-pi interaction number: ', len(CH_pi_info))
+        CH_pi_interaction_info = []
+        for i in CH_pi_info:
+            ring_id = i.split('_')[1]
+            if i.split('_')[1] == 'TRB':
+                ring_atom_id_list = [atom_resi_id_list.index('TRP' + '_' + str(int(i.split('_')[0]) - 0) + '_' + j) + 1 for
+                                     j in
+                                     aromatic_ring_atom_dict[ring_id]]
             else:
-                fragment_store[piece_type_id[0]][0] -= 1
-                atompos_list.append(fragment_store[piece_type_id[0]][1])
-            piece_type_b4 = 'sugar'
-            # print(fragment_store,piece_id)
-        else:
-            piece_type_b4 = 'resi'
-            try:
-                if piece_id > atompos_list[-1] + 1:
-                    piece_id -= 1
-                atompos_list.append(piece_id)
-            except IndexError:
-                pass
-        # print(piece_id,piece_type_b4)
-    piece_list.insert(0, 0)
-    piece_list.append(0)
-    # print(piece_list)
-    if len(piece_list) > max_len_seq:
-        max_len_seq = len(piece_list)
-    #len_seq_record.append(len(piece_list))
-
-    ############# edge info
-    try:
-        CH_pi_info = CH_pi_info_dict[pdb[:-4]]
-    except KeyError:
-        CH_pi_info = []
-    print(CH_pi_info)
-
-    print('CH-pi interaction number: ', len(CH_pi_info))
-    CH_pi_interaction_info = []
-    for i in CH_pi_info:
-        ring_id = i.split('_')[1]
-        if i.split('_')[1] == 'TRB':
-            ring_atom_id_list = [atom_resi_id_list.index('TRP' + '_' + str(int(i.split('_')[0]) - 0) + '_' + j) + 1 for
-                                 j in
-                                 aromatic_ring_atom_dict[ring_id]]
-        else:
-            ring_atom_id_list = [
-                atom_resi_id_list.index(i.split('_')[1] + '_' + str(int(i.split('_')[0]) - 0) + '_' + j) + 1 for j in
-                aromatic_ring_atom_dict[ring_id]]
-        # print(ring_atom_id_list)
-        if i.split('_')[2] == 'B':
-            sugar_C_id = atom_resi_id_list_for_sugar.index(i.split('_')[3] + '_' + i.split('_')[4]) + 1
-        else:
-            sugar_C_id = atom_resi_id_list_for_sugar.index(i.split('_')[2] + '_' + i.split('_')[3]) + 1
-        # print(sugar_C_id)
-        for j in ring_atom_id_list:
-            CH_pi_interaction_info.append([sugar_C_id, j])
-            CH_pi_interaction_info.append([j, sugar_C_id])
-    print(CH_pi_interaction_info)
-
-    bond_line = [i for i in context_line if i[:4] == 'CONE']
-    bond_pair_info = []
-    for i in bond_line:
-        bond_line_info = i.split()
-        for j in range(len(bond_line_info) - 2):
-            bond_pair_info.append([int(bond_line_info[1]), int(bond_line_info[j + 2])])
-    print('covalent bonds number: ', len(bond_pair_info) / 2)
-
-    pairwise_matrix = get_edges(len(atom_line))  # length = #atom^2-#atom #######################################
-
-    bond_list = []  #######################
-    contact_list = []  ##################
-    CH_pi_list = []
-    aa_contact_list = []  ###################
-    edge_select_list = []
-    edge_select = torch.zeros(batch_size, len(atomtype_id_list), len(atomtype_id_list)).to(
-        torch.int32)  ##########################
-    print(edge_select.size())
-    print('atompos_list', len(atompos_list))
-    print('atom_line', len(atom_line))
-
-    for i in range(len(pairwise_matrix[0])):
-        if [int(pairwise_matrix[0][i]) + 1, int(pairwise_matrix[1][i]) + 1] in bond_pair_info:
-            bond_list.append(1)
-        else:
-            bond_list.append(0)
-
-        if [int(pairwise_matrix[0][i]) + 1, int(pairwise_matrix[1][i]) + 1] in CH_pi_interaction_info:
-            CH_pi_list.append(1)
-        else:
-            CH_pi_list.append(0)
-
-        if math.dist(atom_coord_list[pairwise_matrix[0][i]], atom_coord_list[pairwise_matrix[1][i]]) < 3.5 and \
-                bond_list[i] == 0 and residue_id_list[pairwise_matrix[0][i]] != residue_id_list[
-            pairwise_matrix[1][i]] and polartype_list[pairwise_matrix[0][i]] == polartype_list[pairwise_matrix[1][i]]:
-            contact_list.append(1)
-            # print(int(pairwise_matrix[0][i])+1,int(pairwise_matrix[1][i])+1)
-            if (residue_id_list[pairwise_matrix[0][i]].split('_')[0] not in current_sugar_list) and (
-                    residue_id_list[pairwise_matrix[1][i]].split('_')[0] not in current_sugar_list):
-                aa_contact_list.append(1)
-                # print(int(pairwise_matrix[0][i]) + 1, int(pairwise_matrix[1][i]) + 1)
+                ring_atom_id_list = [
+                    atom_resi_id_list.index(i.split('_')[1] + '_' + str(int(i.split('_')[0]) - 0) + '_' + j) + 1 for j in
+                    aromatic_ring_atom_dict[ring_id]]
+            # print(ring_atom_id_list)
+            if i.split('_')[2] == 'B':
+                sugar_C_id = atom_resi_id_list_for_sugar.index(i.split('_')[3] + '_' + i.split('_')[4]) + 1
             else:
+                sugar_C_id = atom_resi_id_list_for_sugar.index(i.split('_')[2] + '_' + i.split('_')[3]) + 1
+            # print(sugar_C_id)
+            for j in ring_atom_id_list:
+                CH_pi_interaction_info.append([sugar_C_id, j])
+                CH_pi_interaction_info.append([j, sugar_C_id])
+        print(CH_pi_interaction_info)
+
+        bond_line = [i for i in context_line if i[:4] == 'CONE']
+        bond_pair_info = []
+        for i in bond_line:
+            bond_line_info = i.split()
+            for j in range(len(bond_line_info) - 2):
+                bond_pair_info.append([int(bond_line_info[1]), int(bond_line_info[j + 2])])
+        print('covalent bonds number: ', len(bond_pair_info) / 2)
+
+        pairwise_matrix = get_edges(len(atom_line))  # length = #atom^2-#atom #######################################
+
+        atom_resi_id_polar_interaction_count=[0 for i in atom_resi_id_list]
+        atom_resi_id_inpolar_interaction_count=[0 for i in atom_resi_id_list]
+        bond_list = []  #######################
+        contact_list = []  ##################
+        polar_contact_list=[]
+        inpolar_contact_list=[]
+        CH_pi_list = []
+        aa_contact_list = []  ###################
+        polar_aa_contact_list = []
+        inpolar_aa_contact_list = []
+        edge_select_list = []
+        edge_select = torch.zeros(batch_size, len(atomtype_id_list), len(atomtype_id_list)).to(
+            torch.int32)  ##########################
+        print(edge_select.size())
+        print('atompos_list', len(atompos_list))
+        print('atom_line', len(atom_line))
+
+        for i in range(len(pairwise_matrix[0])):
+            if [int(pairwise_matrix[0][i]) + 1, int(pairwise_matrix[1][i]) + 1] in bond_pair_info:
+                bond_list.append(1)
+            else:
+                bond_list.append(0)
+
+            if [int(pairwise_matrix[0][i]) + 1, int(pairwise_matrix[1][i]) + 1] in CH_pi_interaction_info:
+                CH_pi_list.append(1)
+            else:
+                CH_pi_list.append(0)
+
+            if math.dist(atom_coord_list[pairwise_matrix[0][i]], atom_coord_list[pairwise_matrix[1][i]]) < 3.5 and \
+                    bond_list[i] == 0 and residue_id_list[pairwise_matrix[0][i]] != residue_id_list[
+                pairwise_matrix[1][i]] and polartype_list[pairwise_matrix[0][i]] == polartype_list[pairwise_matrix[1][i]]:
+                contact_list.append(1)
+                if polartype_list[pairwise_matrix[0][i]] =='polar':
+                    polar_contact_list.append(1)
+                    inpolar_contact_list.append(0)
+                    atom_resi_id_polar_interaction_count[pairwise_matrix[0][i]]+=1
+                    atom_resi_id_polar_interaction_count[pairwise_matrix[1][i]] += 1
+                elif polartype_list[pairwise_matrix[0][i]] != 'polar':
+                    inpolar_contact_list.append(1)
+                    polar_contact_list.append(0)
+                    atom_resi_id_inpolar_interaction_count[pairwise_matrix[0][i]] += 1
+                    atom_resi_id_inpolar_interaction_count[pairwise_matrix[1][i]] += 1
+                print(polartype_list[pairwise_matrix[0][i]],atom_resi_id_list[pairwise_matrix[0][i]],atom_resi_id_list[pairwise_matrix[1][i]])
+                # print(int(pairwise_matrix[0][i])+1,int(pairwise_matrix[1][i])+1)
+                if (residue_id_list[pairwise_matrix[0][i]].split('_')[0] not in current_sugar_list) and (
+                        residue_id_list[pairwise_matrix[1][i]].split('_')[0] not in current_sugar_list):
+                    aa_contact_list.append(1)
+                    if polartype_list[pairwise_matrix[0][i]] == 'polar':
+                        polar_aa_contact_list.append(1)
+                        inpolar_aa_contact_list.append(0)
+                    elif polartype_list[pairwise_matrix[0][i]] != 'polar':
+                        inpolar_aa_contact_list.append(1)
+                        polar_aa_contact_list.append(0)
+                    # print(int(pairwise_matrix[0][i]) + 1, int(pairwise_matrix[1][i]) + 1)
+                else:
+                    aa_contact_list.append(0)
+                    inpolar_aa_contact_list.append(0)
+                    polar_aa_contact_list.append(0)
+            else:
+                contact_list.append(0)
                 aa_contact_list.append(0)
+                inpolar_aa_contact_list.append(0)
+                polar_aa_contact_list.append(0)
+                polar_contact_list.append(0)
+                inpolar_contact_list.append(0)
+
+            #  if error here, sort sugar index before residue index
+            # print(atompos_list[pairwise_matrix[1][i]],atompos_list[pairwise_matrix[0][i]])
+            # print(atom_coord_list[pairwise_matrix[0][i]],atom_coord_list[pairwise_matrix[1][i]])
+            try:
+                if atompos_list[pairwise_matrix[0][i]] != atompos_list[pairwise_matrix[1][i]] and math.dist(
+                        atom_coord_list[pairwise_matrix[0][i]], atom_coord_list[pairwise_matrix[1][i]]) < 3.5:
+                    edge_select_list.append(1)
+                    edge_select[batch_size - 1][pairwise_matrix[0][i]][pairwise_matrix[1][i]] = 1
+                else:
+                    edge_select_list.append(0)
+            except IndexError:
+                print( pdb,'need to sort sugar first')
+                raise IndexError
+
+        # bond between group
+
+        interacting_list = []  #########################################
+        for i, j, k in zip(bond_list, contact_list, CH_pi_list):
+            interacting_list.append([i, j, k])
+
+        clean_interacting_list = []  ###########################################
+        row = []
+        col = []
+        for i, edge in enumerate(interacting_list):
+            if edge != [0, 0, 0]:
+                # print(i,edge)
+                clean_interacting_list.append(edge)
+                # print(int(pairwise_matrix[0][i]),int(pairwise_matrix[1][i]))
+                row.append(int(pairwise_matrix[0][i]))
+                col.append(int(pairwise_matrix[1][i]))
+        clean_pairwise_matrix = [row, col]  #####################################
+
+        edge_select_interacting_list = []  ##############
+        row = []
+        col = []
+        for i, select in enumerate(edge_select_list):
+            if select == 1:
+                # print(i,edge)
+                edge_select_interacting_list.append(interacting_list[i])
+                # print(int(pairwise_matrix[0][i]),int(pairwise_matrix[1][i]))
+                row.append(int(pairwise_matrix[0][i]))
+                col.append(int(pairwise_matrix[1][i]))
+        select_pairwise_matrix = [row, col]
+
+        atom_resi_id_polar_interaction_count=[ct/2 for ct in atom_resi_id_polar_interaction_count ]
+        atom_resi_id_inpolar_interaction_count = [ct / 2 for ct in atom_resi_id_inpolar_interaction_count]
+
+        print('polar-polar/inpolar-inpolar non_covalent contact between residues within 3.5 A: ', sum(contact_list) / 2)
+        print('\tpolar-polar:', sum(polar_contact_list) / 2)
+        print('\tinpolar-inpolar:', sum(inpolar_contact_list) / 2)
+        print('\tpolar interaction   :',atom_resi_id_polar_interaction_count)
+        print('\tinpolar interaction :',atom_resi_id_inpolar_interaction_count)
+        print('\tpolar interaction>1 :',[atom_resi_id_list[ct] for ct in range(len(atom_resi_id_list)) if atom_resi_id_polar_interaction_count[ct]>1])
+        print('\tpolar interaction>2 :', [atom_resi_id_list[ct] for ct in range(len(atom_resi_id_list)) if
+                                          atom_resi_id_polar_interaction_count[ct] > 2])
+        print('polar-polar/inpolar-inpolar non_covalent contact between amino acid within 3.5 A: ',
+              sum(aa_contact_list) / 2)
+        print('\tpolar-polar:', sum(polar_aa_contact_list) / 2)
+        print('\tinpolar-inpolar:', sum(inpolar_aa_contact_list) / 2)
+
+        print('to be predicted contact between pieces within 4 A: ', sum(edge_select_list) / 2)
+
+        print(len(bond_list), sum(bond_list))
+        print(len(contact_list), sum(contact_list))
+        print(len(aa_contact_list), sum(aa_contact_list))
+        print(len(edge_select_list), sum(edge_select_list))
+
+        enablePrint()
+
+        info_dict={}
+        if output_txt==1:
+            if out_path != None:
+                out_path = out_path
+            else:
+                out_path = loc
+
+            with open(out_path + out_file_name, 'w') as out_file:
+                out_file.write('atom_coord_list\t' + str((atom_coord_list).tolist()) + '\n\n')
+                out_file.write('atomtype_id_list\t' + str(atomtype_id_list) + '\n\n')
+                out_file.write('polartype_list\t' + str(polartype_list) + '\n\n')
+                out_file.write('residue_id_list\t' + str(residue_id_list) + '\n\n')
+                out_file.write('atompiece_list\t' + str(atompiece_list) + '\n\n')
+                out_file.write('atompos_list\t' + str(atompos_list) + '\n\n')
+                out_file.write('piece_list\t' + str(piece_list) + '\n\n')
+
+                out_file.write('atom_number\t' + str(len(atomtype_id_list)) + '\n\n')
+                out_file.write('CH_pi_info\t' + str(CH_pi_info) + '\n\n')
+
+                out_file.write('clean_pairwise_matrix\t' + str(clean_pairwise_matrix) + '\n\n')
+                out_file.write('clean_interacting_list\t' + str(clean_interacting_list) + '\n\n')
+                out_file.write('aa_contact_list\t' + str(aa_contact_list) + '\n\n')
+                out_file.write('edge_select\t' + str(edge_select.tolist()) + '\n\n')
+                out_file.write('edge_select_interacting_list\t' + str(edge_select_interacting_list) + '\n\n')
+                out_file.write('select_pairwise_matrix\t' + str(select_pairwise_matrix) + '\n\n')
+                out_file.write('polar interaction>1\t'+str([atom_resi_id_list[ct] for ct in range(len(atom_resi_id_list)) if
+                                                  atom_resi_id_polar_interaction_count[ct] > 1])+ '\n\n')
+                out_file.write('polar interaction>2\t' + str([atom_resi_id_list[ct] for ct in range(len(atom_resi_id_list)) if
+                                                      atom_resi_id_polar_interaction_count[ct] > 2]) + '\n\n')
+                out_file.close()
+            return 'generated input'
+
         else:
-            contact_list.append(0)
-            aa_contact_list.append(0)
 
-        #  if error here, sort sugar index before residue index
-        # print(atompos_list[pairwise_matrix[1][i]],atompos_list[pairwise_matrix[0][i]])
-        # print(atom_coord_list[pairwise_matrix[0][i]],atom_coord_list[pairwise_matrix[1][i]])
-        if atompos_list[pairwise_matrix[0][i]] != atompos_list[pairwise_matrix[1][i]] and math.dist(
-                atom_coord_list[pairwise_matrix[0][i]], atom_coord_list[pairwise_matrix[1][i]]) < 3.5:
-            edge_select_list.append(1)
-            edge_select[batch_size - 1][pairwise_matrix[0][i]][pairwise_matrix[1][i]] = 1
-        else:
-            edge_select_list.append(0)
+            info_dict['atom_coord_list']=(atom_coord_list).tolist()
+            info_dict['atomtype_id_list']=atomtype_id_list
+            info_dict['polartype_list']=polartype_list
+            info_dict['residue_id_list']=residue_id_list
+            info_dict['atompiece_list']=atompiece_list
+            info_dict['atompos_list']=atompos_list
+            info_dict['piece_list']=piece_list
 
-    # bond between group
+            info_dict['atom_number']=len(atomtype_id_list)
+            info_dict['CH_pi_info']=CH_pi_info
 
-    interacting_list = []  #########################################
-    for i, j, k in zip(bond_list, contact_list, CH_pi_list):
-        interacting_list.append([i, j, k])
-
-    clean_interacting_list = []  ###########################################
-    row = []
-    col = []
-    for i, edge in enumerate(interacting_list):
-        if edge != [0, 0, 0]:
-            # print(i,edge)
-            clean_interacting_list.append(edge)
-            # print(int(pairwise_matrix[0][i]),int(pairwise_matrix[1][i]))
-            row.append(int(pairwise_matrix[0][i]))
-            col.append(int(pairwise_matrix[1][i]))
-    clean_pairwise_matrix = [row, col]  #####################################
-
-    edge_select_interacting_list = []  ##############
-    row = []
-    col = []
-    for i, select in enumerate(edge_select_list):
-        if select == 1:
-            # print(i,edge)
-            edge_select_interacting_list.append(interacting_list[i])
-            # print(int(pairwise_matrix[0][i]),int(pairwise_matrix[1][i]))
-            row.append(int(pairwise_matrix[0][i]))
-            col.append(int(pairwise_matrix[1][i]))
-    select_pairwise_matrix = [row, col]
-
-    print('polar-polar/inpolar-inpolar non_covalent contact between residues within 3.5 A: ', sum(contact_list) / 2)
-    print('polar-polar/inpolar-inpolar non_covalent contact between amino acid within 3.5 A: ',
-          sum(aa_contact_list) / 2)
-    print('to be predicted contact between pieces within 4 A: ', sum(edge_select_list) / 2)
-
-    print(len(bond_list), sum(bond_list))
-    print(len(contact_list), sum(contact_list))
-    print(len(aa_contact_list), sum(aa_contact_list))
-    print(len(edge_select_list), sum(edge_select_list))
+            info_dict['clean_pairwise_matrix']=clean_pairwise_matrix
+            info_dict['clean_interacting_list']=clean_interacting_list
+            info_dict['aa_contact_list']=aa_contact_list
+            info_dict['edge_select']=edge_select.tolist()
+            info_dict['edge_select_interacting_list']=edge_select_interacting_list
+            info_dict['select_pairwise_matrix']=select_pairwise_matrix
 
 
-    info_dict={}
-    if output_txt==1:
-        with open(loc + pdb[:-4] + '_elicit_info.txt', 'w') as out_file:
-            out_file.write('atom_coord_list\t' + str((atom_coord_list).tolist()) + '\n\n')
-            out_file.write('atomtype_id_list\t' + str(atomtype_id_list) + '\n\n')
-            out_file.write('polartype_list\t' + str(polartype_list) + '\n\n')
-            out_file.write('residue_id_list\t' + str(residue_id_list) + '\n\n')
-            out_file.write('atompiece_list\t' + str(atompiece_list) + '\n\n')
-            out_file.write('atompos_list\t' + str(atompos_list) + '\n\n')
-            out_file.write('piece_list\t' + str(piece_list) + '\n\n')
-
-            out_file.write('atom_number\t' + str(len(atomtype_id_list)) + '\n\n')
-            out_file.write('CH_pi_info\t' + str(CH_pi_info) + '\n\n')
-
-            out_file.write('clean_pairwise_matrix\t' + str(clean_pairwise_matrix) + '\n\n')
-            out_file.write('clean_interacting_list\t' + str(clean_interacting_list) + '\n\n')
-            out_file.write('aa_contact_list\t' + str(aa_contact_list) + '\n\n')
-            out_file.write('edge_select\t' + str(edge_select.tolist()) + '\n\n')
-            out_file.write('edge_select_interacting_list\t' + str(edge_select_interacting_list) + '\n\n')
-            out_file.write('select_pairwise_matrix\t' + str(select_pairwise_matrix) + '\n\n')
-
-            out_file.close()
-    else:
-
-        info_dict['atom_coord_list']=(atom_coord_list).tolist()
-        info_dict['atomtype_id_list']=atomtype_id_list
-        info_dict['polartype_list']=polartype_list
-        info_dict['residue_id_list']=residue_id_list
-        info_dict['atompiece_list']=atompiece_list
-        info_dict['atompos_list']=atompos_list
-        info_dict['piece_list']=piece_list
-
-        info_dict['atom_number']=len(atomtype_id_list)
-        info_dict['CH_pi_info']=CH_pi_info
-
-        info_dict['clean_pairwise_matrix']=clean_pairwise_matrix
-        info_dict['clean_interacting_list']=clean_interacting_list
-        info_dict['aa_contact_list']=aa_contact_list
-        info_dict['edge_select']=edge_select.tolist()
-        info_dict['edge_select_interacting_list']=edge_select_interacting_list
-        info_dict['select_pairwise_matrix']=select_pairwise_matrix
-    return info_dict
-
+        return info_dict
+   #except NameError:
+   #    raise
+   except Exception as inst:
+       raise
+       enablePrint()
+       print(inst)
+       print(loc,pdb)
+       blockPrint()
+       return 'error\t'+pdb
 
 
 ### frament atom of residue
@@ -444,10 +738,44 @@ unq_atomtype_list=(list(set(current_atomtype_list)))
 
 
 
-atomtype2id={'CAbb': 1, 'CH0': 2, 'CH1': 3, 'CH2': 4, 'CH3': 5, 'CNH2': 6, 'COO': 7, 'CObb': 8, 'NH2O': 9, 'Narg': 10,
-             'Nbb': 11, 'Nhis': 12, 'Nlys': 13, 'Npro': 14, 'NtrR': 15, 'Ntrp': 16, 'OCbb': 17, 'OH': 18, 'ONH2': 19, 'OOC': 20,
-             'OS': 21, 'S': 22, 'SH1': 23, 'VIRT': 24, 'aroC': 25,'Phos':26,'SO4':27,}
-#print(atomtype2id)
+
+atomtype2id={
+'CAbb': 1, ## Ca sp3 for backbone
+'CH0': 2,  ## C sp3 0-H
+'CH1': 3,  ## C sp3 1-H
+'CH2': 4,   ## C sp3 2-H
+'CH3': 5,   ## C sp3 3-H
+'CNH2': 6,  ## C sp2 -N-C(=O)-R Amide C
+'COO': 7,   ## C sp2 -COO carboxyl C
+'CObb': 8,  ## C sp3 for backbone
+'aroC': 25,  ### C sp3 aromatic C
+
+'NH2O': 9,  ## N sp2 -N-C(=O)-R Amide N
+'Narg': 10, ## N sp3 Arg terminal N only currently
+'Nbb': 11, ## N sp2 for backbone
+'Nhis': 12, ## N sp2 His N with positive changed only currently
+'Nlys': 13, ## N sp3 Lys terminal N with positive changedonly currently
+'Npro': 14, ## N sp3? Pro N only currently
+'NtrR': 15, ## N sp3 Arg connecting N  (C-N-C) or (C-N-SO3)
+'Ntrp': 16, ## N sp2 Trp/His-NE2 N only currently
+
+'OCbb': 17, ## O for backbone
+'OH': 18, ## O sp3 for hydroxyl, acid
+'ONH2': 19, ## O sp2 -N-C(=O)-R Amide O
+'OOC': 20, ## O sp2 -COO carboxyl O
+'OS': 21, ## O sp3 for C-O-C, and sugar ring O
+
+'S': 22, ## S sp3  C-S-C  for MET only
+'SH1': 23, ## S sp3 terminal S for CYS/CYZ
+'SO4':27, ## S sp3  S04
+
+
+'VIRT': 24,
+'Phos':26, ## P sp3  P04
+
+}
+
+
 
 aa2fid={
     'SER':1, #Ser_Thr
@@ -469,348 +797,24 @@ aa2fid={
 }
 '''
 <s>=0,<pad>=13
+14	 6/5	C5O1/C4O1  # 6/5-atom sugar ring 
+15	 1	    O1 # Oxygen
+16	 2	    C1O1 # C-O
+17	 4	    C2O1N1 # amide
+18	 3	    CO2 #COO
+19	 1	    C1 # Carbon
+20	 4	    O3P # PO3 of -O-PO3
+21	 1	    N1 # Ntrp sp2 (error use, mix with sp3+sp2)
+22	 4	    O3S # SO3 of -O-SO3
 
 '''
-sugar_atom2fragment={
-    'GLC_C1': [14,6], # 6-atom sugar ring
-    'GLC_C2': [14,6],  # 6-atom sugar ring
-    'GLC_C3': [14,6],  # 6-atom sugar ring
-    'GLC_C4': [14,6],  # 6-atom sugar ring
-    'GLC_C5': [14,6],  # 6-atom sugar ring
-    'GLC_O5': [14,6],  # 6-atom sugar ring
-    'GLC_O':  [15,1], # Oxygen
-    'GLC_O1': [15,1],  # Oxygen
-    'GLC_O2': [15,1],  # Oxygen
-    'GLC_O3': [15,1],  # Oxygen
-    'GLC_O4': [15,1],  # Oxygen
-    'GLC_C6': [16,2],  # C-O
-    'GLC_O6': [16,2],  # C-O
 
-    'Glc_C1': [14, 6],  # 6-atom sugar ring
-    'Glc_C2': [14, 6],  # 6-atom sugar ring
-    'Glc_C3': [14, 6],  # 6-atom sugar ring
-    'Glc_C4': [14, 6],  # 6-atom sugar ring
-    'Glc_C5': [14, 6],  # 6-atom sugar ring
-    'Glc_O5': [14, 6],  # 6-atom sugar ring
-    'Glc_O': [15, 1],  # Oxygen
-    'Glc_O1': [15, 1],  # Oxygen
-    'Glc_O2': [15, 1],  # Oxygen
-    'Glc_O3': [15, 1],  # Oxygen
-    'Glc_O4': [15, 1],  # Oxygen
-    'Glc_C6': [16, 2],  # C-O
-    'Glc_O6': [16, 2],  # C-O
 
-    'BGC_C1': [14, 6],  # 6-atom sugar ring
-    'BGC_C2': [14, 6],  # 6-atom sugar ring
-    'BGC_C3': [14, 6],  # 6-atom sugar ring
-    'BGC_C4': [14, 6],  # 6-atom sugar ring
-    'BGC_C5': [14, 6],  # 6-atom sugar ring
-    'BGC_O5': [14, 6],  # 6-atom sugar ring
-    'BGC_O': [15, 1],
-    'BGC_O1': [15, 1],  # Oxygen
-    'BGC_O2': [15, 1],  # Oxygen
-    'BGC_O3': [15, 1],  # Oxygen
-    'BGC_O4': [15, 1],  # Oxygen
-    'BGC_C6': [16, 2],  # C-O
-    'BGC_O6': [16, 2],  # C-O
+############## process sugar fragment type
+sugar_atom2fragment,current_sugar_list=load_sugar_fragment_database()
 
-    'GAL_C1': [14, 6],  # 6-atom sugar ring
-    'GAL_C2': [14, 6],  # 6-atom sugar ring
-    'GAL_C3': [14, 6],  # 6-atom sugar ring
-    'GAL_C4': [14, 6],  # 6-atom sugar ring
-    'GAL_C5': [14, 6],  # 6-atom sugar ring
-    'GAL_O5': [14, 6],  # 6-atom sugar ring
-    'GAL_O': [15, 1],
-    'GAL_O1': [15, 1],  # Oxygen
-    'GAL_O2': [15, 1],  # Oxygen
-    'GAL_O3': [15, 1],  # Oxygen
-    'GAL_O4': [15, 1],  # Oxygen
-    'GAL_C6': [16, 2],  # C-O
-    'GAL_O6': [16, 2],  # C-O
 
-    'NAG_C1':[14, 6], # 6-atom sugar ring
-    'NAG_C2':[14, 6], # 6-atom sugar ring
-    'NAG_C3':[14, 6], # 6-atom sugar ring
-    'NAG_C4':[14, 6], # 6-atom sugar ring
-    'NAG_C5':[14, 6], # 6-atom sugar ring
-    'NAG_O5':[14, 6], # 6-atom sugar ring
-    'NAG_O3':[15, 1],  # Oxygen
-    'NAG_O4':[15, 1],  # Oxygen
-    'NAG_O1':[15, 1],  # Oxygen
-    'NAG_O':[15, 1],  # Oxygen
-    'NAG_C6':[16, 2], # C-O
-    'NAG_O6':[16, 2], # C-O
-    'NAG_C7':[17,4], # amide
-    'NAG_C8':[17,4], # amide
-    'NAG_N2':[17,4], # amide
-    'NAG_O7':[17,4], # amide
 
-    'BDP_C1' :[14, 6], # 6-atom sugar ring
-    'BDP_C2' :[14, 6], # 6-atom sugar ring
-    'BDP_C3' :[14, 6], # 6-atom sugar ring
-    'BDP_C4' :[14, 6], # 6-atom sugar ring
-    'BDP_O5': [14, 6],  # 6-atom sugar ring
-    'BDP_C5' :[14, 6], # 6-atom sugar ring
-    'BDP_O':[15, 1],  # Oxygen
-    'BDP_O1':[15, 1],  # Oxygen
-    'BDP_O2':[15, 1],  # Oxygen
-    'BDP_O3':[15, 1],  # Oxygen
-    'BDP_O4':[15, 1],  # Oxygen
-    'BDP_C6' :[18,3], #COO
-    'BDP_O6A':[18,3], #COO
-    'BDP_O6B':[18,3], #COO
-
-    'GCU_C1': [14, 6],  # 6-atom sugar ring
-    'GCU_C2': [14, 6],  # 6-atom sugar ring
-    'GCU_C3': [14, 6],  # 6-atom sugar ring
-    'GCU_C4': [14, 6],  # 6-atom sugar ring
-    'GCU_O5': [14, 6],  # 6-atom sugar ring
-    'GCU_C5': [14, 6],  # 6-atom sugar ring
-    'GCU_O': [15, 1],  # Oxygen
-    'GCU_O1': [15, 1],  # Oxygen
-    'GCU_O2': [15, 1],  # Oxygen
-    'GCU_O3': [15, 1],  # Oxygen
-    'GCU_O4': [15, 1],  # Oxygen
-    'GCU_C6': [18, 3],  # COO
-    'GCU_O6A': [18, 3],  # COO
-    'GCU_O6B': [18, 3],  # COO
-
-    'XYS_C1': [14, 6],  # 6-atom sugar ring
-    'XYS_C2': [14, 6],  # 6-atom sugar ring
-    'XYS_C3': [14, 6],  # 6-atom sugar ring
-    'XYS_C4': [14, 6],  # 6-atom sugar ring
-    'XYS_O5': [14, 6],  # 6-atom sugar ring
-    'XYS_C5': [14, 6],  # 6-atom sugar ring
-    'XYS_O': [15, 1],  # Oxygen
-    'XYS_O1': [15, 1],  # Oxygen
-    'XYS_O2': [15, 1],  # Oxygen
-    'XYS_O3': [15, 1],  # Oxygen
-    'XYS_O4': [15, 1],  # Oxygen
-
-    'SIA_C2': [14, 6],  # 6-atom sugar ring
-    'SIA_C3': [14, 6],  # 6-atom sugar ring
-    'SIA_C4': [14, 6],  # 6-atom sugar ring
-    'SIA_C5': [14, 6],  # 6-atom sugar ring
-    'SIA_C6': [14, 6],  # 6-atom sugar ring
-    'SIA_O6': [14, 6],  # 6-atom sugar ring
-    'SIA_N5': [17, 4],  # amide
-    'SIA_C10': [17, 4],  # amide
-    'SIA_C11': [17, 4],  # amide
-    'SIA_O10': [17, 4],  # amide
-    'SIA_O1': [15, 1],  # Oxygen
-    'SIA_O4': [15, 1],  # Oxygen
-    'SIA_O': [15, 1],  # Oxygen
-    'SIA_C1': [18, 3],  # COO
-    'SIA_1O1': [18, 3],  # COO
-    'SIA_2O1': [18, 3],  # COO
-    'SIA_O7': [16, 2],  # C-O
-    'SIA_C7': [16, 2],  # C-O
-    'SIA_O8': [16, 2],  # C-O
-    'SIA_C8': [16, 2],  # C-O
-    'SIA_O9': [16, 2],  # C-O
-    'SIA_C9': [16, 2],  # C-O
-
-    'RIB_C1': [14, 5],  # 5-atom sugar ring
-    'RIB_C2': [14, 5],  # 5-atom sugar ring
-    'RIB_C3': [14, 5],  # 5-atom sugar ring
-    'RIB_C4': [14, 5],  # 5-atom sugar ring
-    'RIB_O4': [14, 5],  # 5-atom sugar ring
-    'RIB_O': [15, 1],  # Oxygen
-    'RIB_O1': [15, 1],  # Oxygen
-    'RIB_O2': [15, 1],  # Oxygen
-    'RIB_O3': [15, 1],  # Oxygen
-    'RIB_C5': [16, 2],  # C-O
-    'RIB_O5': [16, 2],  # C-O
-
-    'Fru_C2': [14, 5],  # 5-atom sugar ring
-    'Fru_C3': [14, 5],  # 5-atom sugar ring
-    'Fru_C4': [14, 5],  # 5-atom sugar ring
-    'Fru_C5': [14, 5],  # 5-atom sugar ring
-    'Fru_O5': [14, 5],  # 5-atom sugar ring
-    'Fru_O2': [15, 1],  # Oxygen
-    'Fru_O3': [15, 1],  # Oxygen
-    'Fru_O4': [15, 1],  # Oxygen
-    'Fru_C1': [16, 2],  # C-O
-    'Fru_O1': [16, 2],  # C-O
-    'Fru_C6': [16, 2],  # C-O
-    'Fru_O6': [16, 2],  # C-O
-
-    'MAN_C1': [14, 6],  # 6-atom sugar ring
-    'MAN_C2': [14, 6],  # 6-atom sugar ring
-    'MAN_C3': [14, 6],  # 6-atom sugar ring
-    'MAN_C4': [14, 6],  # 6-atom sugar ring
-    'MAN_C5': [14, 6],  # 6-atom sugar ring
-    'MAN_O5': [14, 6],  # 6-atom sugar ring
-    'MAN_O': [15, 1],  # Oxygen
-    'MAN_O1': [15, 1],  # Oxygen
-    'MAN_O2': [15, 1],  # Oxygen
-    'MAN_O3': [15, 1],  # Oxygen
-    'MAN_O4': [15, 1],  # Oxygen
-    'MAN_C6': [16, 2],  # C-O
-    'MAN_O6': [16, 2],  # C-O
-
-    'FUC_C1': [14, 6],  # 6-atom sugar ring
-    'FUC_C2': [14, 6],  # 6-atom sugar ring
-    'FUC_C3': [14, 6],  # 6-atom sugar ring
-    'FUC_C4': [14, 6],  # 6-atom sugar ring
-    'FUC_C5': [14, 6],  # 6-atom sugar ring
-    'FUC_O5': [14, 6],  # 6-atom sugar ring
-    'FUC_O': [15, 1],  # Oxygen
-    'FUC_O1': [15, 1],  # Oxygen
-    'FUC_O2': [15, 1],  # Oxygen
-    'FUC_O3': [15, 1],  # Oxygen
-    'FUC_O4': [15, 1],  # Oxygen
-    'FUC_C6': [19, 1],  # Carbon
-
-    'ARA_C1': [14, 6],  # 6-atom sugar ring
-    'ARA_C2': [14, 6],  # 6-atom sugar ring
-    'ARA_C3': [14, 6],  # 6-atom sugar ring
-    'ARA_C4': [14, 6],  # 6-atom sugar ring
-    'ARA_C5': [14, 6],  # 6-atom sugar ring
-    'ARA_O5': [14, 6],  # 6-atom sugar ring
-    'ARA_O': [15, 1],  # Oxygen
-    'ARA_O1': [15, 1],  # Oxygen
-    'ARA_O2': [15, 1],  # Oxygen
-    'ARA_O3': [15, 1],  # Oxygen
-    'ARA_O4': [15, 1],  # Oxygen
-
-    'G6P_C1': [14, 6],  # 6-atom sugar ring
-    'G6P_C2': [14, 6],  # 6-atom sugar ring
-    'G6P_C3': [14, 6],  # 6-atom sugar ring
-    'G6P_C4': [14, 6],  # 6-atom sugar ring
-    'G6P_C5': [14, 6],  # 6-atom sugar ring
-    'G6P_O5': [14, 6],  # 6-atom sugar ring
-    'G6P_O': [15, 1],  # Oxygen
-    'G6P_O1': [15, 1],  # Oxygen
-    'G6P_O2': [15, 1],  # Oxygen
-    'G6P_O3': [15, 1],  # Oxygen
-    'G6P_O4': [15, 1],  # Oxygen
-    'G6P_C6': [16, 2],  # C-O
-    'G6P_O6': [16, 2],  # C-O
-    'G6P_P': [20, 4],  # PO3
-    'G6P_OP1': [20, 4],  # PO3
-    'G6P_OP2': [20, 4],  # PO3
-    'G6P_OP3': [20, 4],  # PO3
-    'G6P_O1P': [20, 4],  # PO3
-    'G6P_O2P': [20, 4],  # PO3
-    'G6P_O3P': [20, 4],  # PO3
-
-    'BG6_C1': [14, 6],  # 6-atom sugar ring
-    'BG6_C2': [14, 6],  # 6-atom sugar ring
-    'BG6_C3': [14, 6],  # 6-atom sugar ring
-    'BG6_C4': [14, 6],  # 6-atom sugar ring
-    'BG6_C5': [14, 6],  # 6-atom sugar ring
-    'BG6_O5': [14, 6],  # 6-atom sugar ring
-    'BG6_O': [15, 1],  # Oxygen
-    'BG6_O1': [15, 1],  # Oxygen
-    'BG6_O2': [15, 1],  # Oxygen
-    'BG6_O3': [15, 1],  # Oxygen
-    'BG6_O4': [15, 1],  # Oxygen
-    'BG6_C6': [16, 2],  # C-O
-    'BG6_O6': [16, 2],  # C-O
-    'BG6_P': [20, 4],  # PO3
-    'BG6_OP1': [20, 4],  # PO3
-    'BG6_OP2': [20, 4],  # PO3
-    'BG6_OP3': [20, 4],  # PO3
-    'BG6_O1P': [20, 4],  # PO3
-    'BG6_O2P': [20, 4],  # PO3
-    'BG6_O3P': [20, 4],  # PO3
-
-    'NGA_C1': [14, 6],  # 6-atom sugar ring
-    'NGA_C2': [14, 6],  # 6-atom sugar ring
-    'NGA_C3': [14, 6],  # 6-atom sugar ring
-    'NGA_C4': [14, 6],  # 6-atom sugar ring
-    'NGA_C5': [14, 6],  # 6-atom sugar ring
-    'NGA_O5': [14, 6],  # 6-atom sugar ring
-    'NGA_O3': [15, 1],  # Oxygen
-    'NGA_O4': [15, 1],  # Oxygen
-    'NGA_O1': [15, 1],  # Oxygen
-    'NGA_O': [15, 1],  # Oxygen
-    'NGA_C6': [16, 2],  # C-O
-    'NGA_O6': [16, 2],  # C-O
-    'NGA_C7': [17, 4],  # amide
-    'NGA_C8': [17, 4],  # amide
-    'NGA_N2': [17, 4],  # amide
-    'NGA_O7': [17, 4],  # amide
-
-    'A2G_C1': [14, 6],  # 6-atom sugar ring
-    'A2G_C2': [14, 6],  # 6-atom sugar ring
-    'A2G_C3': [14, 6],  # 6-atom sugar ring
-    'A2G_C4': [14, 6],  # 6-atom sugar ring
-    'A2G_C5': [14, 6],  # 6-atom sugar ring
-    'A2G_O5': [14, 6],  # 6-atom sugar ring
-    'A2G_O3': [15, 1],  # Oxygen
-    'A2G_O4': [15, 1],  # Oxygen
-    'A2G_O1': [15, 1],  # Oxygen
-    'A2G_O': [15, 1],  # Oxygen
-    'A2G_C6': [16, 2],  # C-O
-    'A2G_O6': [16, 2],  # C-O
-    'A2G_C7': [17, 4],  # amide
-    'A2G_C8': [17, 4],  # amide
-    'A2G_N2': [17, 4],  # amide
-    'A2G_O7': [17, 4],  # amide
-
-    'SGN_C1' : [14, 6],  # 6-atom sugar ring
-    'SGN_C2' : [14, 6],  # 6-atom sugar ring
-    'SGN_C3' : [14, 6],  # 6-atom sugar ring
-    'SGN_C4' : [14, 6],  # 6-atom sugar ring
-    'SGN_C5' : [14, 6],  # 6-atom sugar ring
-    'SGN_C6' : [16, 2],  # C-O
-    'SGN_N2' : [21, 1],  # Ntrp
-    'SGN_O1' : [15, 1],  # Oxygen
-    'SGN_O ' : [15, 1],  # Oxygen
-    'SGN_O3' : [15, 1],  # Oxygen
-    'SGN_O4' : [15, 1],  # Oxygen
-    'SGN_O5' : [14, 6],  # 6-atom sugar ring
-    'SGN_O6' : [16, 2],  # C-O
-    'SGN_S1' : [22, 4],  # SO3
-    'SGN_O1S': [22, 4],  # SO3
-    'SGN_O2S': [22, 4],  # SO3
-    'SGN_O3S': [22, 4],  # SO3
-    'SGN_S2' : [22, 4],  # SO3
-    'SGN_O4S': [22, 4],  # SO3
-    'SGN_O5S': [22, 4],  # SO3
-    'SGN_O6S': [22, 4],  # SO3
-
-    'ASG_C1' : [14, 6],  # 6-atom sugar ring
-    'ASG_C2' : [14, 6],  # 6-atom sugar ring
-    'ASG_C3' : [14, 6],  # 6-atom sugar ring
-    'ASG_C4' : [14, 6],  # 6-atom sugar ring
-    'ASG_C5' : [14, 6],  # 6-atom sugar ring
-    'ASG_C6' : [16, 2],  # C-O
-    'ASG_C7' : [17, 4],  # amide
-    'ASG_C8' : [17, 4],  # amide
-    'ASG_N2' : [17, 4],  # amide
-    'ASG_O' : [15, 1],  # Oxygen
-    'ASG_O1' : [15, 1],  # Oxygen
-    'ASG_O3' : [15, 1],  # Oxygen
-    'ASG_O4' : [15, 1],  # Oxygen
-    'ASG_O5' : [14, 6],  # 6-atom sugar ring
-    'ASG_O6' : [16, 2],  # C-O
-    'ASG_O7' : [17, 4],  # amide
-    'ASG_S' : [22, 4],  # SO3
-    'ASG_OSA' : [22, 4],  # SO3
-    'ASG_OSB' : [22, 4],  # SO3
-    'ASG_OSC' : [22, 4],  # SO3
-
-    'RP5_C1': [14, 5],  # 5-atom sugar ring
-    'RP5_C2': [14, 5],  # 5-atom sugar ring
-    'RP5_C3': [14, 5],  # 5-atom sugar ring
-    'RP5_C4': [14, 5],  # 5-atom sugar ring
-    'RP5_O4': [14, 5],  # 5-atom sugar ring
-    'RP5_O': [15, 1],  # Oxygen
-    'RP5_O1': [15, 1],  # Oxygen
-    'RP5_O2': [15, 1],  # Oxygen
-    'RP5_O3': [15, 1],  # Oxygen
-    'RP5_C5': [16, 2],  # C-O
-    'RP5_O5': [16, 2],  # C-O
-    "RP5_P'": [20, 4],  # PO3
-    'RP5_O1X': [20, 4],  # PO3
-    'RP5_O2X': [20, 4],  # PO3
-    'RP5_O3X': [20, 4],  # PO3
-}
-
-current_sugar_list=['GLC','BGC','GAL','NAG','BDP','GCU','FUC','MAN','SIA','XYS','ARA','Fru','RIB','NGA','A2G','SGN','ASG','BG6','G6P','RP5','Glc']
 
 aromatic_ring_atom_dict={
     'PHE':['CD1', 'CD2', 'CE1', 'CE2', 'CG', 'CZ'],
@@ -826,11 +830,8 @@ aromatic_ring_atom_dict={
 def main():
     ### load CH-pi score
 
-    loc = '../example/test_pdb/'
-    loc = loc.replace('\\', '/')
-    loc = loc + '/'
-
-
+    loc='/home/tm21372/Rosetta/workspace/specificity_check/mut/all_pdb_pair/to_cst_relax/cst_fast/'
+    loc='/home/tm21372/Rosetta/workspace/DL/sugar-binding-predictor/example/conor_struct_2/All_Rosetta_Output_Structures/'
 
     file_list = []
     for f in os.listdir(loc):
@@ -843,10 +844,14 @@ def main():
     max_len_seq = 0
     len_seq_record = []
 
-    for pdb in file_list:#['5XC2_51_poly_1.pdb']:#
-        data_preprocessing(loc, pdb,)
+    for pdb in file_list[0:]:#
+        data_preprocessing(loc, pdb,debug_mode=0,ignore_CH_pi=1)
 
+    #data_preprocessing('/home/tm21372/Rosetta/workspace/3rd_design/previous_9_design/','TIM1.pdb')
+    #data_preprocessing(loc, 'cfr_int:A_B:7VN6--M-GLC`1-`_-1g0p163a0i0s0o_pair_1_0001.pdb', debug_mode=1)
+    #data_preprocessing('/home/tm21372/Rosetta/workspace/2nd_design/new_res_design/replace_by_sugar_all//', 'sort_116_W4B_4A1J_6.pdb', debug_mode=1,ignore_CH_pi=1,out_path='/home/tm21372/Rosetta/workspace/2nd_design/new_res_design/replace_by_sugar_all/GLC//train/')
 if __name__ == "__main__":
    # stuff only to run when not called via 'import' here
    main()
+
 
