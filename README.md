@@ -27,12 +27,13 @@ pip install torch torch-sparse torch-scatter torch-cluster -f https://data.pyg.o
 pip install dive-into-graphs
 ```
 
+
 _data preprocessing part (PyMOL depended):  _
 ```sh
 conda install -c conda-forge -c schrodinger pymol-bundle  
 conda install -c conda-forge libnetcdf==4.7.3  
 
-```
+
 
  <h2 align="left">Running</h2>
 
@@ -52,4 +53,9 @@ Running option:
 
 `--model` : Model parameter for prediction, there are `well-trained` and `general` two options, in default both of them would be used.  
 
+
+
+ <h2 align="left">Contact</h2>
+
+ Yijie Luo [Jacky](https://github.com/Jacky233emm) -- yijie.luo@bristol.ac.uk
 
