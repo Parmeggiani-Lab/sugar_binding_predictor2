@@ -138,18 +138,20 @@ def find_CH_pi_aromatic_pymol(loc,each_file):
     os.remove(loc + each_file[:-4] + '_measuring.ent')
     atom_line = [i for i in context_line if i[:4] == 'HETA' or i[:4] == 'ATOM']
     sugar_line = [i for i in context_line if i[:4] == 'HETA']
-    if sugar_line == []:
-        return 'No recognized sugar'
+    #if sugar_line == []:
+        #return 'No recognized sugar'
     link_line = [i for i in context_line if i[:4] == 'CONE']
     check_new_sugar = [
-        [i[:4], i[7:11].split()[0], i[12:16].split()[0], i[17:21].split()[0], i[22:30].split()[0], i[77:78].split()[0],np.array([float(i[31:38].split()[0]), float(i[39:45].split()[0]), float(i[47:56].split()[0])])]
+        [i[:4], i[7:11].split()[0], i[12:16].split()[0], i[17:21].split()[0], i[22:30].split()[0], i[77:78].split()[0],np.array([float(i[31:38].split()[0]), float(i[39:45].split()[0]), float(i[47:56].split()[0])]),i[21:22],i[72:73]]
         for i in atom_line ]
     new_sugar_residx_atomidx = {}  ### new sugar id - atom id
     info_dict={}
     for i in check_new_sugar:
         new_sugar_residx_atomidx[i[1]] = i[4]
         info_dict[i[1]]=i
+        #print(info_dict[i[1]])
     #print(new_sugar_residx_atomidx)
+    #print(info_dict)
     link_record_dict = {}
     for i in link_line:
         atom1 = i.split()[1]
@@ -175,7 +177,7 @@ def find_CH_pi_aromatic_pymol(loc,each_file):
                 CH_pair_list.append(
                         [info_dict[i][4] + '_' + info_dict[i][2]+'_' + info_dict[neigb][2], info_dict[i][3],
                          info_dict[i][6], info_dict[i][6]-info_dict[neigb][6],
-                         info_dict[neigb][6] ])
+                         info_dict[neigb][6],  info_dict[i][-2]+'_'+info_dict[i][-1]])
     #print('C-H pair',CH_pair_list)
 
     ### get aromatic ring
@@ -187,15 +189,16 @@ def find_CH_pi_aromatic_pymol(loc,each_file):
         #print('dihedral_atom',dihedral_atom_coord)
         #print([info_dict[i][3] + '_' + info_dict[i][4] for i in ring], len(ring))
         if info_dict[ring[0]][3]=='TRP' and len(ring)==6:
-            aromatic_ring_list.append([info_dict[ring[0]][4], 'TRP_B', center[0], center[1]])
+            aromatic_ring_list.append([info_dict[ring[0]][4], 'TRP_B', center[0], center[1],info_dict[ring[0]][-2]+'_'+info_dict[ring[0]][-1] ])
         else:
-            aromatic_ring_list.append([info_dict[ring[0]][4],info_dict[ring[0]][3], center[0], center[1]])
+            aromatic_ring_list.append([info_dict[ring[0]][4],info_dict[ring[0]][3], center[0], center[1],info_dict[ring[0]][-2]+'_'+info_dict[ring[0]][-1]])
 
 
 
     ### get Chi-2 of aromatic ring
     dihedral_atom_list = ['N', 'CA', 'CB', 'CG']
     for ring_info in aromatic_ring_list:
+
         chi_measure_dict={}
         for atom in check_new_sugar:
             if atom[2] in dihedral_atom_list and atom[4]==ring_info[0]  :
@@ -209,8 +212,10 @@ def find_CH_pi_aromatic_pymol(loc,each_file):
 
     CH_pi_info_list = []
     for aromatic_ring in aromatic_ring_list:
+
         for CH_pair in CH_pair_list:
-            chi2_ori = float(aromatic_ring[4])#float(pose.residue(int(aromatic_ring[0])).chi(2))
+            #print(CH_pair)
+            chi2_ori = float(aromatic_ring[-1])#float(pose.residue(int(aromatic_ring[0])).chi(2))
             chi2 = float("{:.2f}".format(chi2_ori))
             C_X_dist = run_dist(CH_pair[2], aromatic_ring[2])
             H_X_dist = run_dist(CH_pair[4], aromatic_ring[2])
@@ -223,7 +228,7 @@ def find_CH_pi_aromatic_pymol(loc,each_file):
                 Cp_X_dist = C_X_dist * np.sin(CX_vert_angle * np.pi / 180)
                 CH_pi_info_list.append(
                     [C_X_dist, CH_vert_angle, Cp_X_dist,aromatic_ring[0] , aromatic_ring[1],
-                     CH_pair[0], chi2,
+                     CH_pair[0], chi2,aromatic_ring[4],CH_pair[1],CH_pair[5],
                      loc+each_file])
                 # print(aromatic_ring[0],pose.pdb_info().number(aromatic_ring[0]))
     return CH_pi_info_list
@@ -239,19 +244,19 @@ def pose_CH_pi_score(CH_pi_aromatic_list):
                     if i[2]<1.6: #C-projection distance cutoff=1.6A
                         print(i)
                         CH_pi_score+=1
-                        CH_pi_record_list.append(str(i[3])+'_'+i[4]+'_'+i[5]+'_'+str(i[6]))
+                        CH_pi_record_list.append(str(i[3])+'_'+i[4]+'_'+i[5]+'_'+str(i[6])+'_'+i[-4]+'_'+i[-3]+'_'+i[-2])
                 elif i[4]=='PHE' or i[4]=='TRP_B' or i[4]=='TYR': #for Phe, Trp_B, Tyr
                     if i[2]<2: #C-projection distance cutoff=2A
                         print(i)
                         CH_pi_score += 1
                         if i[4]=='TRP_B':
-                            CH_pi_record_list.append(str(i[3]) + '_' + 'TRB' + '_' + i[5]+'_'+str(i[6]))
+                            CH_pi_record_list.append(str(i[3])+'_'+'TRB'+'_'+i[5]+'_'+str(i[6])+'_'+i[-4]+'_'+i[-3]+'_'+i[-2])
                         else:
-                            CH_pi_record_list.append(str(i[3]) + '_' + i[4] + '_' + i[5] + '_' + str(i[6]))
+                            CH_pi_record_list.append(str(i[3])+'_'+i[4]+'_'+i[5]+'_'+str(i[6])+'_'+i[-4]+'_'+i[-3]+'_'+i[-2])
     print('CH_pi_score :',CH_pi_score)
     return CH_pi_score,CH_pi_record_list
 
-def measure_CH_pi(loc,each_file,out_record=1,out_path=None):
+def measure_CH_pi(loc,each_file,out_record=1,out_path=None,print_info=None):
     #blockPrint()
     print('\n'+each_file)
 
@@ -261,6 +266,7 @@ def measure_CH_pi(loc,each_file,out_record=1,out_path=None):
 
     CH_pi_score = result[0]
     CH_pi_record= result[1]
+    print(CH_pi_record)
 
     if out_path!=None:
         out_path=out_path
@@ -280,12 +286,27 @@ def main():
     loc='/home/tm21372/Rosetta/workspace/2nd_design/GLC/native/double_relax/'
     loc='/home/tm21372/Rosetta/workspace/2nd_design/GLC/native/min/'
     loc='/home/tm21372/Rosetta/workspace/DL/sugar-binding-predictor/example/CH_pi_update/'
+    loc='/home/tm21372/Rosetta/workspace/sugar_protein_pair_dataset/3.5A_cutoff/relaxed_pair_structure/batch_1/cst_fast/'
+    loc='/home/tm21372/Rosetta/workspace/2nd_design/new_res_design/param_gen/pair/'
+    loc='/home/tm21372/Rosetta/workspace/sugar_protein_pair_dataset/3.5A_cutoff/relaxed_pair_structure/batch_1/cst_fast/ion_involved_site/'
+    loc='/home/tm21372/Rosetta/workspace/4th_design/after_hbNet_sandwich/'
+    loc='/home/tm21372/Rosetta/workspace/4th_design/after_HBNet_v2/'
+    loc='/home/tm21372/Rosetta/workspace/4th_design/after_HBNet_metal/'
+    loc='/home/tm21372/Rosetta/workspace/sugar_protein_pair_dataset/3.5A_cutoff/relaxed_pair_structure/batch_1/cst_fast/ion_involved_site/remove_seqidt25/'
+
     pdb_files = [file for file in os.listdir(loc) if file[-4:] == '.pdb' ]
     for pdb in tqdm(pdb_files):
+        if '_elicit' in pdb:
+            continue
+        if '_resi' in pdb:
+            continue
         #print(pdb)
-        measure_CH_pi(loc,pdb)
 
-    #measure_CH_pi('/home/tm21372/Rosetta/workspace/2nd_design/GLC_control/','rel_2hph_0001.pdb')
+        CH_pi_record=measure_CH_pi(loc,pdb)
+        CH_pi_record = [i.replace('TRB', 'TRP') for i in CH_pi_record]
+        CH_pi_pair_count = len(list(set(['_'.join(i.split('_')[:3]) for i in CH_pi_record])))
+        print(CH_pi_pair_count)
+    #measure_CH_pi('/home/tm21372/Rosetta/workspace/sugar_protein_pair_dataset/3.5A_cutoff/relaxed_pair_structure/batch_1/cst_fast/test_new_ch-pi/','cfr_int:A_B:6GNG--C-GLC`2-`_-2g0p5a0i0s0o_pair_1_0001.pdb',)#'cfr_int:A_B:7KV7--AAA-BGC`302-`_-0g0p6a0i1s4o_pair_3_0001.pdb'
 
 
 if __name__ == "__main__":

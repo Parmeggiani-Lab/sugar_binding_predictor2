@@ -136,11 +136,16 @@ class sugar_binding_predictor(nn.Module):
 
         return h, coord, length, edges, edge_attr ,atom_number, atom_pos ,pieces_ori#,pieces_coord_i,,edge_select,gold_edge,pieces_coord_for_rnn
 
-    def forward(self,info_dict):
+    def forward(self,info_dict,return_u=False):
 
         ## dataloading
-        h, coord, length, edges, edge_attr, atom_number, atom_pos,pieces_ori=self.data_loading(info_dict)
-
+        try:
+            h, coord, length, edges, edge_attr, atom_number, atom_pos,pieces_ori=self.data_loading(info_dict)
+        except TypeError :
+            if return_u == True:
+                return 0, 0
+            else:
+                return 0
         ## sphereNet embeding
         print('edge_attr',edge_attr.device)
         print(edge_attr.size())
@@ -186,12 +191,16 @@ class sugar_binding_predictor(nn.Module):
             u = global_add_pool(hm.squeeze(0), torch.zeros(hm.size(1), dtype=torch.long,device=device)) / int(sugar_number)
             print('agg in molecule-level:', u.size())
 
+        out_u = u
         print('u',u.device)
         pred = self.h_to_pred(u)
 
         print('pred: ',pred.size())
 
-        return pred
+        if return_u==True:
+            return pred, out_u
+        else:
+            return pred
 
 
 

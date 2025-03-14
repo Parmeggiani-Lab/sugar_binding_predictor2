@@ -125,7 +125,7 @@ def predict_binding(out_path='../'):
 
         param_file_list=['ndv4_general.pt','ndv4_well.pt']
     elif args.model=='well-trained':
-        param_file_list = ['ndv4_well.pt']]
+        param_file_list = ['ndv4_well.pt']
     elif args.model=='general':
         param_file_list = [ 'ndv4_general.pt']
     else:
