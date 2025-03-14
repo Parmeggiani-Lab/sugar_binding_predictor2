@@ -25,6 +25,7 @@ parser.add_argument('--model', type=str, default=None, help='Model parameter for
 parser.add_argument('--output_CH_pi_record', type=int, default=1, help='Write CH-pi interaction info for each pdb file ')
 parser.add_argument('-d', type=int, default=0, help='shortcut option of protein design result design running ')
 
+
 args = parser.parse_args()
 
 
@@ -121,6 +122,7 @@ def predict_binding(out_path='../'):
     select_param_loc =args.model_dir
     param_file_list = ['ndv2_general.pt','ndv2_well.pt','ndv3_general.pt','ndv3_well.pt','ndv4_general.pt','ndv4_well.pt','ndv5_general.pt','ndv5_well.pt','ndv6_general.pt','ndv6_well.pt']
     if args.model is None:
+
         param_file_list=['ndv4_general.pt','ndv4_well.pt']
     elif args.model=='well-trained':
         param_file_list = ['ndv4_well.pt']]
@@ -209,6 +211,7 @@ def predict_binding(out_path='../'):
                 if 'None' in r1:
                     r1=r1[-1]
                 f.write(str(r1) + '\t' + str(r3) + "\t" + str(r2).split('/')[-1].split('_elicit_info.txt')[0] +'\t'+select_param[:-3]+ "\n")
+
         if args.d == 1:
             with open(out_path + 'design_pred.record', "a") as f:
                 for r1, r2, r3 in zip(accuarcy_list, accuarcy_file_list, pred_result_list):
@@ -216,6 +219,7 @@ def predict_binding(out_path='../'):
                         r1 = r1[-1]
                     f.write(str(r1) + '\t' + str(r3) + "\t" + str(r2).split('/')[-1].split('_elicit_info.txt')[
                         0] + '\t' + select_param[:-3] + "\n")
+
 
     pd.set_option('display.max_rows', 500)
     print(test_result)
