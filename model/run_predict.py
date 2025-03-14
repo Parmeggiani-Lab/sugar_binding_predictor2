@@ -19,10 +19,11 @@ parser.add_argument('--site_txt', type=str, default=None, help='Processed minimu
 parser.add_argument('--site_list', type=str, default=None, help='Processed minimum binding site input .txt list, each file can add a label after the file name seperated by a tab')
 parser.add_argument('--with_label', type=int, default=1, help='Label 1 or 0 of input file, if unknown set None')
 parser.add_argument('--file_path', type=str, default='../example/test_pdb/', help='Directory of input file or file list ')
-parser.add_argument('--out_dir', type=str, default='../', help='Directory where the outputs will be written to')
+parser.add_argument('--out_dir', type=str, default='input dir', help='Directory where the outputs will be written to')
 parser.add_argument('--model_dir', type=str, default='../model/param/', help='Path to folder with trained model and hyperparameters')
 parser.add_argument('--model', type=str, default=None, help='Model parameter for prediction, there are well-trained and general two options, in default both of them would be used ')
 parser.add_argument('--output_CH_pi_record', type=int, default=1, help='Write CH-pi interaction info for each pdb file ')
+parser.add_argument('-d', type=int, default=0, help='shortcut option of protein design result design running ')
 
 args = parser.parse_args()
 
@@ -74,6 +75,8 @@ def load_sample():
     output_CH_pi_record=args.output_CH_pi_record
     test_only_set=[]
     file_path=args.file_path
+    if args.d==1:
+        args.complex_list='list'
     if args.complex_pdb==args.complex_list==args.site_txt==args.site_list==None:
         print('No file is loading. Please use any  of --complex_pdb, --complex_list, --site_txt, --site_list. ')
         print('Running example ... ')
@@ -114,14 +117,18 @@ def load_sample():
 
 
 def predict_binding(out_path='../'):
+    #write_time=open('/home/tm21372/Rosetta/workspace/ndv2_test_compare/test_run_time/'+str(time.time())+'.txt','w')
     select_param_loc =args.model_dir
-    param_file_list=[]
+    param_file_list = ['ndv2_general.pt','ndv2_well.pt','ndv3_general.pt','ndv3_well.pt','ndv4_general.pt','ndv4_well.pt','ndv5_general.pt','ndv5_well.pt','ndv6_general.pt','ndv6_well.pt']
     if args.model is None:
-        param_file_list = ['ndv2_general.pt','ndv2_well.pt',]
+        param_file_list=['ndv4_general.pt','ndv4_well.pt']
     elif args.model=='well-trained':
-        param_file_list = ['ndv2_well.pt']
+        param_file_list = ['ndv4_well.pt']]
     elif args.model=='general':
-        param_file_list = ['ndv2_general.pt']
+        param_file_list = [ 'ndv4_general.pt']
+    else:
+        param_file_list= [ i for i in param_file_list if args.model in i]
+
     print('\nModel to be run :',param_file_list)
     param_index = 0
 
@@ -132,6 +139,9 @@ def predict_binding(out_path='../'):
         test_result = pd.DataFrame(
             columns=['params_name', 'test_accuracy', 'test_size', '11', '10', '00', '01'])
 
+    if args.d==1:
+        with open(out_path + 'design_pred.record', "w") as f:
+            f.close()
     for select_param in param_file_list:
         param_index += 1
         model.load_state_dict(torch.load(select_param_loc + select_param))
@@ -199,6 +209,13 @@ def predict_binding(out_path='../'):
                 if 'None' in r1:
                     r1=r1[-1]
                 f.write(str(r1) + '\t' + str(r3) + "\t" + str(r2).split('/')[-1].split('_elicit_info.txt')[0] +'\t'+select_param[:-3]+ "\n")
+        if args.d == 1:
+            with open(out_path + 'design_pred.record', "a") as f:
+                for r1, r2, r3 in zip(accuarcy_list, accuarcy_file_list, pred_result_list):
+                    if 'None' in r1:
+                        r1 = r1[-1]
+                    f.write(str(r1) + '\t' + str(r3) + "\t" + str(r2).split('/')[-1].split('_elicit_info.txt')[
+                        0] + '\t' + select_param[:-3] + "\n")
 
     pd.set_option('display.max_rows', 500)
     print(test_result)
@@ -207,15 +224,24 @@ def predict_binding(out_path='../'):
 
 
 if __name__ == '__main__':
-
+    start = time.time()
     ### load model
     random.seed(2023)
     device = torch.device('cpu')
     deg = torch.tensor([0, 10989, 16001, 15933, 3905, 774, 169, 82, 79, 183, 17, 11, 39, 0, 1])
-    model = sugar_binding_predictor(device=device, deg=deg, fragment_cluster=1, sugar_cluster=None)
+    model = sugar_binding_predictor(device=device, deg=deg, fragment_cluster=1, sugar_cluster=None,)
     loss_func = torch.nn.L1Loss()
 
     print('\n\nprocessing sample...')
     test_only_set=load_sample()
-    predict_binding(out_path=args.out_dir)
+    out_path=args.out_dir
+    if args.d==1:
+        out_path=args.file_path
+    if out_path=='input dir':
+        out_path = args.file_path
+    predict_binding(out_path=out_path)
+
+    end = time.time()
+    length = end - start
+    print(("It took {:.2f} seconds").format(length))
 
