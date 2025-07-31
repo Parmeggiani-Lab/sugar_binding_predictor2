@@ -59,3 +59,6 @@ Running option:
 
  Yijie Luo [Jacky](https://github.com/Jacky233emm) -- yijie.luo@bristol.ac.uk
 
+  <h2 align="left">Cite</h2>
+
+https://www.biorxiv.org/content/10.1101/2025.02.27.640667v2.full
