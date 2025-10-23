@@ -15,7 +15,7 @@ This method  takes the .pdb structure file as input and outputs 1 or 0 to indica
 
  <h2 align="left">Installation</h2>
 
-
+Linux environment is required for running CLIMBS
 Recommand to use virtual environment for building.
 
 _classifier model part:  _
