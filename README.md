@@ -32,7 +32,7 @@ _data preprocessing part (PyMOL depended):  _
 ```sh
 conda install -c conda-forge -c schrodinger pymol-bundle  
 conda install -c conda-forge libnetcdf==4.7.3  
-
+```
 
 
  <h2 align="left">Running</h2>
