@@ -39,6 +39,7 @@ conda install -c conda-forge libnetcdf==4.7.3
 
 Simply run by: 
 ```sh
+cd ./model/
 python run_predict.py
 ```
 Running option: 
